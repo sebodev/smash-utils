@@ -30,7 +30,7 @@ other = parser.add_argument_group('Other options')
 wordpress.add_argument("-n", "--new", help="Runs through an interactive session to help you get things setup.", action="store_true")
 wordpress.add_argument("-_", "--new_s-project", default="", action="store_true", help="Create a new _s project" )
 wordpress.add_argument("-e", "--existing_s-project", default="", action="store_true", help="retrieve an existing _s project")
-wordpress.add_argument("--wp", "--wordpress", default="", action="store_true", help="sets up a new wordpress site")
+wordpress.add_argument("--wordpress", "--wp", default="", help="sets up a new wordpress site")
 wordpress.add_argument("--theme", help="Can be used in conjuction with --existing_s-project if the theme name differs from the project name")
 wordpress.add_argument("-w", "--watch", help="watches the project for changes. This accomplishes the same thing as running the gulp command except it can be run anwhere within the project folder", action="store_true")
 
@@ -42,9 +42,10 @@ maintenance.add_argument("--passwords", nargs="?", default="", metavar="search-t
 maintenance.add_argument("--filezilla", nargs="?", default="", metavar="entry", help="Filezilla's interface hides passwords, but if you provide the name from Filezilla's site manager, I'll tell you the password")
 maintenance.add_argument("--lastpass", nargs="?", default="", metavar="search-term", help="Searches Lastpass for passwords")
 maintenance.add_argument("--chrome", nargs="?", default="", metavar="search-term", help="Searches Google Chrome for passwords")
+maintenance.add_argument("--db", nargs="*", default="", metavar="search-term", help="Grabs database credentials from the site's config.php file")
 maintenance.add_argument("--ssl", nargs="?", metavar="domain", help="checks the accounts on the wpwarranty webfaction account to see if any of them are expiring soon. Optionally pass in a specific website to check")
 maintenance.add_argument("--performance", nargs="+", metavar=("domain", "output file"), help="Runs a webpagetest.org performance test. Pass in a location to store the CSV results")
-
+maintenance.add_argument("--lockouts", nargs="+", metavar=("_", "_"), help="Checks the number of ithemes security lockouts logged in the database")
 
 other.add_argument("--setup", "--install", action="store_true", help="Runs through the initial setup of this script")
 other.add_argument("--update", help="updates this script", action="store_true")

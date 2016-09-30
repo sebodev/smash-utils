@@ -17,6 +17,8 @@ def change_current_project(project):
     global current_project, project_dir, webfaction_theme_dir, theme
     current_project      = project
     project_dir          = projects_root_dir / (current_project or '')
+    if not theme:
+        theme = current_project
     if theme != current_project:
         project_dir = project_dir / theme
     project_dir = str(project_dir)
@@ -25,9 +27,13 @@ def change_current_project(project):
 script_dir = Path(Path(__file__).resolve().parent.parent) # just getting the parent directory of this file
 storage_dir = Path.home() / '.smash-utils' #store files in here that you do not want to have committed like the user credentials config
 conf_dir = storage_dir / "confs"
+tmp_dir = storage_dir / "tmp"
 
 if not conf_dir.is_dir():
     conf_dir.mkdir()
+
+if not tmp_dir.is_dir():
+    tmp_dir.mkdir()
 
 #create our config readers
 
@@ -42,11 +48,11 @@ webfaction_conf.read(str(webfaction_conf_loc))
 google_drive_client_secret = credentials_conf.get('google-drive', 'client-secret', fallback=None)
 
 #I will be removing these as soon as I can, as soon as I switch over to the webfactions dictionary
-ftp_host             = credentials_conf.get('webfaction', 'host', fallback=None)
-ssh_username         = credentials_conf.get('webfaction', 'ssh-username', fallback=None)
-ssh_password         = credentials_conf.get('webfaction', 'ssh-password', fallback=None)
-ftp_username         = credentials_conf.get('webfaction', 'ftp-username', fallback=None) or ssh_username
-ftp_password         = credentials_conf.get('webfaction', 'ftp-password', fallback=None) or ssh_password
+ftp_host             = credentials_conf.get('sebodev', 'host', fallback=None)
+ssh_username         = credentials_conf.get('sebodev', 'ssh-username', fallback=None)
+ssh_password         = credentials_conf.get('sebodev', 'ssh-password', fallback=None)
+ftp_username         = credentials_conf.get('sebodev', 'ftp-username', fallback=None) or ssh_username
+ftp_password         = credentials_conf.get('sebodev', 'ftp-password', fallback=None) or ssh_password
 
 webfaction = {}
 def save_webfaction_conf_entries():
@@ -58,8 +64,8 @@ def save_webfaction_conf_entries():
 save_webfaction_conf_entries()
 #import pprint; pprint.pprint(webfaction)
 
-sebo_conf = sebo_conf_loc = projects_root_dir = google_drive_client_secret = installed = None
-google_drive_root_dir = google_drive_smash_utils_dir = google_drive_maintenance_dir = None
+# sebo_conf = sebo_conf_loc = projects_root_dir = google_drive_client_secret = installed = None
+# google_drive_root_dir = google_drive_smash_utils_dir = google_drive_maintenance_dir = None
 def save_sebo_conf_vars():
     global sebo_conf, sebo_conf_loc, projects_root_dir, storage_dir, installed
     global google_drive_smash_utils_dir, google_drive_maintenance_dir, google_drive_client_secret, google_drive_root_dir
@@ -71,7 +77,12 @@ def save_sebo_conf_vars():
 
     #save some vars from the conf file
     projects_root_dir = Path(sebo_conf.get('locations', 'project_dir', fallback=""))
-    installed = Path(sebo_conf.get('setup_info', 'setup_run', fallback=""))
+
+    try:
+        sebo_conf.add_section('setup_info')
+    except configparser.DuplicateSectionError:
+        pass
+    installed = sebo_conf.get('setup_info', 'setup_run', fallback="")
 
     #save google drive folders
     google_drive_root_dir = Path( sebo_conf.get('locations', 'google_drive', fallback="") )
@@ -79,8 +90,8 @@ def save_sebo_conf_vars():
     google_drive_maintenance_dir = google_drive_root_dir / "Sebo Dev" / "WordPress Warranty & Maintanence"
 
     saved_storage_dir = sebo_conf.get('locations', 'stored_data', fallback=None)
-    if saved_storage_dir:
-        storage_dir = saved_storage_dir
+    # if saved_storage_dir:
+    #     storage_dir = saved_storage_dir
 
 save_sebo_conf_vars()
 

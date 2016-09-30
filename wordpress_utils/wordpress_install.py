@@ -15,8 +15,9 @@ import urllib.request, urllib.parse, urllib.error, urllib.parse, unittest
 
 from runner import vars
 
-webfaction_user = vars.ftp_username
-webfaction_passwd = vars.ftp_password
+webfaction_user = vars.webfaction["sebodev"]["ssh-username"]
+webfaction_passwd = vars.webfaction["sebodev"]["ssh-password"]
+
 website_name = vars.current_project.replace(' ', '')
 if not re.compile('^[a-zA-Z0-9\.\-]+$').search(website_name) and not website_name.startswith('-') and not website.endswith('-'):
     raise Exception('You\'re getting too fancy with your subdomain. ' \
@@ -34,6 +35,7 @@ try:
         driver.get("https://my.webfaction.com/")
         driver.find_element_by_id("id_username").clear()
         driver.find_element_by_id("id_username").send_keys(webfaction_user)
+        time.sleep(4)
         driver.find_element_by_id("id_password").clear()
         driver.find_element_by_id("id_password").send_keys(webfaction_passwd)
         driver.find_element_by_css_selector('#loginbox button[type="submit"]').click()

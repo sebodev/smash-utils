@@ -2,17 +2,20 @@ import shutil, os, re
 from runner import vars
 
 # wpw_name contains the client name passed in from the command line
-# wpw_level is a 1, 2, or 3 for the different wordpress warranty packages -- wpw 99, wpw+, and wpw & maintenance
-wpw_name = None
-wpw_level = None
+# wpw_level is a 1, 2, or 3 for the different wordpress warranty packages -- wpw, care, and care and feeding
+wpw_name = wpw_level = client_dir = client_website = None
 
-client_dir = vars.google_drive_maintenance_dir / "clients" / wpw_name
-client_website_guess = wpw_name.replace(" ", "").strip()
-if re.search("(\....$)", client_website_guess) is None:
-    client_website_guess += ".com"
-client_website = input("what website is this for? Leave blank if it's {}: ".format(client_website_guess))
-if not client_website:
-    client_website = client_website_guess
+def init(name, level):
+    global wpw_name, wpw_level, client_dir, client_website
+    wpw_name = name
+    wpw_level = level
+    client_dir = vars.google_drive_maintenance_dir / "clients" / wpw_name
+    client_website_guess = wpw_name.replace(" ", "").strip()
+    if re.search("(\....$)", client_website_guess) is None:
+        client_website_guess += ".com"
+    client_website = input("what website is this for? Leave blank if it's {}: ".format(client_website_guess))
+    if not client_website:
+        client_website = client_website_guess
 
 def create_google_drive_folder():
     """create a folder for them in Google Drive
@@ -21,6 +24,7 @@ def create_google_drive_folder():
         client_template_dir = vars.google_drive_maintenance_dir / "clients" / "_client folder template"
         shutil.copytree(str(client_template_dir), str(client_dir))
         print("You can just hit ok on the Google Drive pop-up")
+        #ToDo rename files as needed
     except FileExistsError:
         response = input("%s already exists. Would you like to reconfigure this folder? This will delete some of the existing data [yes/No]:" % client_dir)
         if response.startswith("y"):
@@ -41,6 +45,7 @@ def create_contact_info_file():
 
     contact_info_contents = ""
     def add_contact(contact, poc=True):
+        nonlocal contact_info_contents
         if poc:
             print("\nHey, could I quickly get a little info about %s's point of contact" % wpw_name)
             poc_name = input("what is the name of the point of contact: ")
@@ -80,24 +85,22 @@ def save_dns_info():
     maintenance_utils.dns.main(client_website, dns_file)
 
 def check_ssl_expiration():
-    import ssl_check
+    from maintenance_utils import ssl_check
     res = ssl_check.ssl_expires_soon(client_website, suppressErrors=False)
     if res is None:
         print("couldn't check when the SSL certificate expires\n")
 
 def initial_performance_test():
-    import performance_test
+    from maintenance_utils import performance_test
     save_loc = client_dir / "initial-performance-test.csv"
     performance_test.run(client_website, save_loc)
 
 def main(name, level):
-    global wpw_name, wpw_level
-    wpw_name = name
-    wpw_level = level
+    init(name, level)
     create_google_drive_folder()
+    check_ssl_expiration()
     create_contact_info_file()
     save_dns_info()
-    check_ssl_expiration()
     initial_performance_test()
 
 # plugins_dir = vars.google_drive_maintenance_dir / "Maintenance Setup" / "Plugins"

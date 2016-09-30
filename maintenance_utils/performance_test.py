@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import lxml.etree
@@ -10,6 +11,12 @@ from runner import vars
 
 def main(domain, save_file_loc=None):
     return run(domain, save_file_loc)
+
+def loading_dots():
+    while True:
+        yield("\r.  ")
+        yield("\r.. ")
+        yield("\r...")
 
 def run(domain, save_file_loc=None):
     api_key = "A.d01883a3916a31ca52ac7cf481756263" #we're limited to 100 tests per day with this key
@@ -38,15 +45,19 @@ def run(domain, save_file_loc=None):
             return False
         return True
 
-    time.sleep(5)
-    max_attempts = 10
+    time.sleep(2)
+    max_attempts = 50
+    dots = loading_dots()
     for i in range(max_attempts):
         if is_test_finished():
             break
-        time.sleep(5)
-        print(".", end=" ", flush=True)
-        time.sleep(5)
-        print(".", end=" ", flush=True)
+
+        time.sleep(3)
+        print(next(dots), end="", flush=True)
+        sys.stdout.flush()
+        time.sleep(3)
+        print(next(dots), end="", flush=True)
+        sys.stdout.flush()
     else:
         raise Exception("timed out")
 

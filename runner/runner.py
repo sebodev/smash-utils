@@ -8,6 +8,10 @@ if "--setup" in sys.argv:
     from runner import setup
     setup.main()
 
+elif "--lockouts" in sys.argv:
+    from maintenance_utils import security_info
+    security_info.main()
+
 elif "--migrate" in sys.argv:
     from maintenance_utils import migrate
     migrate.main()
@@ -30,11 +34,11 @@ elif "--passwords" in sys.argv:
     search_term = args.passwords
     if not search_term:
         search_term = input('Enter a search term: ')
-    passwords.main(search_term)
+    all_passwords.main(search_term)
 
 elif "--filezilla" in sys.argv:
     from maintenance_utils import filezilla_passwords
-    search_term - args.filezilla
+    search_term = args.filezilla
     if not search_term:
         search_term = input('Enter your Filezilla search term: ')
     filezilla_passwords.main(search_term)
@@ -52,6 +56,20 @@ elif "--chrome" in sys.argv:
     if not search_term:
         search_term = input('Enter your Chrome search term: ')
     chrome_passwords.main(search_term)
+
+elif "--db" in sys.argv:
+    from maintenance_utils import db_passwords
+    try:
+        search_term = args.db[0]
+    except IndexError:
+        search_term = input('Enter a website: ')
+
+    try:
+        app_name = args.db[1]
+    except IndexError:
+        app_name = input('Enter the Webfaction App Name: ')
+
+    db_passwords.main(search_term, app_name)
 
 elif "--update" in sys.argv:
     import subprocess
@@ -100,10 +118,11 @@ elif ("--md5" in sys.argv or "--hash" in sys.argv):
     md5.main(args.md5)
 
 elif ("--wp" in sys.argv or "--wordpress" in sys.argv):
-    change_current_project(args.wordpress)
+    vars.change_current_project(args.wordpress)
     while not vars.current_project:
         vars.change_current_project(input('Enter a project (or a subdomain): '))
-    import wordpress_utils.wordpress_install
+    import wordpress_utils.wordpress_install2
+    wordpress_utils.wordpress_install2.main(vars.current_project)
 
 elif ("-_" in sys.argv or "--new_s-project" in sys.argv):
     change_current_project(args.new_s-project)

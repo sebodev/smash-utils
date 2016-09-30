@@ -53,7 +53,7 @@ def main(domain, output_file=None):
         _, res = res.split("=")
         webhost = res.strip()
     except:
-        webhost = "IDk"
+        webhost = "IDK"
 
     #get email server
     email_server_msg = ""

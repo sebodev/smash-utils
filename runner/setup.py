@@ -42,6 +42,7 @@ def save_personal_info():
     else:
         lastpass_email = email_guess
 
+    print("one moment please...")
     lib.lastpass.save_username(lastpass_email)
 
 
@@ -59,6 +60,9 @@ def save_locations():
         assert(os.path.exists(google_drive_dir))
 
     vars.sebo_conf.set("locations", "stored_data", vars.storage_dir)
+    try:
+
+    except:
     vars.sebo_conf.set("setup_info", "setup_run", "True")
 
     with vars.sebo_conf_loc.open('w') as configfile:
@@ -110,8 +114,8 @@ def main():
         print("First off, let's go through some yes/no questions\n")
         save_personal_info()
         setup_webfaction_conf()
+        print("\nNow we need a couple of locations on your computer")
         save_locations()
-        print("Now we need a couple of locations on your computer")
         check_path()
-        print("Thanks for the info. Now We just have to install the dependencies")
+        print("\nThanks for the info. Now We just have to install the dependencies")
         install_dependencies()
