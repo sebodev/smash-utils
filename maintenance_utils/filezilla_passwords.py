@@ -12,9 +12,7 @@ def find(search_term):
     root = lxml.etree.parse(logins_file)
     matches = root.xpath(".//Server//*[contains(text(),'"+ search_term +"')]")
 
-    found=False
     for el in matches:
-        found=True
         el = el.getparent()
         host = el.find("Host").text
         user = el.find("User").text
@@ -26,9 +24,6 @@ def find(search_term):
 
         passwd = base64.b64decode(passwd).decode("utf-8")
         yield (name, host, user, passwd)
-        
-    if not found and vars.verbose:
-        print("no filezilla logins found using the search term %s" % search_term)
 
 def main(search_term):
     for name, host, user, passwd in find(search_term):

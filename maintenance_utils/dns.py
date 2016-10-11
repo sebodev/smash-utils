@@ -78,9 +78,20 @@ def main(domain, output_file=None):
 
     print("Web Host:", webhost)
 
+
     try:
         print("Name Server:", whois_dict["Name Server"].lower())
-        print(email_server_msg.strip())
+    except:
+        print("I just can't seem to find the name server")
+
+    print(email_server_msg.strip())
+
+    try:
         print("Registrar:", whois_dict["Registrar"])
     except KeyError:
-        print("I just can't seem to find the registrar or name server")
+        try:
+            print("Registrar:", whois_dict["Organization"])
+        except KeyError:
+            print("I just can't seem to find the registrar")
+
+    import pprint; pprint.pprint(whois_dict)

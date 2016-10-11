@@ -24,7 +24,7 @@ remote_sync_file_contents = """
 }
 """
 
-with open(vars.project_dir + '\\.remote-sync.json', 'w') as f:
+with open(str(vars.project_dir) + '\\.remote-sync.json', 'w') as f:
     f.write(remote_sync_file_contents)
 
 ftppass_contents = """
@@ -36,5 +36,5 @@ ftppass_contents = """
 }
 """
 
-with open(vars.project_dir + '\\.ftppass', 'w') as f:
+with open(str(vars.project_dir) + '\\.ftppass', 'w') as f:
     f.write(ftppass_contents)

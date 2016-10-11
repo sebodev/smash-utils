@@ -16,7 +16,7 @@ def main(search_term):
         for i in credential:
             print(i)
 
-def find(search_term):
+def find(search_term, search_term2=None):
     path = getpath()
 
     def query_logins_db():
@@ -53,10 +53,18 @@ def find(search_term):
             if search_term in url or search_term in user:
                 #unencrypts data encrypted with win32crypt.CryptProtectData. see http://docs.activestate.com/activepython/2.7/pywin32/win32crypt__CryptUnprotectData_meth.html
                 password = win32crypt.CryptUnprotectData(passwd, None, None, None, 0)[1].decode()
-                yield (url, user, password)
+                if search_term2:
+                    if search_term2 in url or search_term2 in user:
+                        yield (url, user, password)
+                else:
+                    yield (url, user, password)
     else:
         for url, user, passwd in query_results:
-            yield (url, user, str(password))
+            if search_term2:
+                if search_term2 in url or search_term2 in user:
+                    yield (url, user, password)
+            else:
+                yield (url, user, password)
 
 def getpath():
 

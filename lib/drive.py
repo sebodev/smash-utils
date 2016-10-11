@@ -11,7 +11,7 @@ from runner import vars
 flags = tools.argparser.parse_args(args=["--logging_level", "DEBUG"]) #these flags can be found at http://oauth2client.readthedocs.io/en/latest/source/oauth2client.tools.html#oauth2client.tools.run_flow. The following flag is not mentioned, but can be used as well --logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
 
 # If modifying these scopes, delete your previously saved credentials
-# by running this script with the verbose/debug flag
+# by running this script with the --new-credentials flag
 SCOPES = 'https://www.googleapis.com/auth/drive'
 APPLICATION_NAME = 'WPW Setup'
 
@@ -26,7 +26,7 @@ def get_credentials():
     client_secret_loc = drive_dir / 'client_secret.json'
 
     store = oauth2client.file.Storage(str(client_secret_loc))
-    if vars.verbose:
+    if vars.new_credentials:
         try:
             store.delete() #if any changes are made to the client secret file, you'll need to delete the file so it can be recreated. The store.delete() command does this.
         except FileNotFoundError:
@@ -48,7 +48,7 @@ def get_credentials():
             f.write(client_secret_contents)
 
     store = oauth2client.file.Storage('drive.storage')
-    if vars.verbose:
+    if vars.new_credentials:
         store.delete()
     credentials = store.get()
     if not credentials or credentials.invalid:

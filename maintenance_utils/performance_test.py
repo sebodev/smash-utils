@@ -9,6 +9,8 @@ from runner import vars
 
 #webpagetest.org rest api documentation at https://sites.google.com/a/webpagetest.org/docs/advanced-features/webpagetest-restful-apis
 
+RUNS_PER_TEST = 5
+
 def main(domain, save_file_loc=None):
     return run(domain, save_file_loc)
 
@@ -26,7 +28,8 @@ def run(domain, save_file_loc=None):
         "url": "http://"+domain,
         "k": api_key,
         "location": "ec2-us-west-2:Chrome.FIOS", #FIOS is 20 Mbps but this is not guaranteed to be consistant
-        "f": "xml"
+        "f": "xml",
+        "runs": RUNS_PER_TEST,
     })
     root = lxml.etree.fromstring(resp.content)
     xml_url = root.xpath(".//xmlUrl/child::text()")[0]
@@ -46,7 +49,7 @@ def run(domain, save_file_loc=None):
         return True
 
     time.sleep(2)
-    max_attempts = 50
+    max_attempts = 100
     dots = loading_dots()
     for i in range(max_attempts):
         if is_test_finished():

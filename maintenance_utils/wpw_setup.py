@@ -78,6 +78,23 @@ def create_contact_info_file():
 
     contact_info_file.write_text(contact_info_contents)
 
+def create_update_info_file():
+    update_info_file = client_dir / "Update Info.txt"
+
+    try:
+        os.remove(str(contact_info_file))
+    except FileNotFoundError:
+        pass
+
+    update_core_uri_component = "/wp-login.php?redirect_to=%2Fwp-admin%2Fupdate-core.php&reauth=1"
+    contents = ""
+    the_input = input("Enter the URL of the staging site, or leave blank for staging.{}".format(client_website)
+    if not the_input:
+        the_input = "staging."+client_website
+    contents += "staging=" + the_input + update_core_uri_component
+    contents += "form=" + input("enter the URL for the updates form. To find this open up {}, click the send button, and then click on the tab with the link icon".format(client_dir)))
+    contents += "website=" + client_website + update_core_uri_component
+
 def save_dns_info():
     import maintenance_utils.dns
     dns_file = client_dir / (client_website + " dns info.txt")
@@ -101,6 +118,7 @@ def main(name, level):
     check_ssl_expiration()
     create_contact_info_file()
     save_dns_info()
+    create_update_info_file()
     initial_performance_test()
 
 # plugins_dir = vars.google_drive_maintenance_dir / "Maintenance Setup" / "Plugins"

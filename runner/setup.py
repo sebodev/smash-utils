@@ -12,7 +12,11 @@ keep track if first or repeat time running setup and prompt what to reconfigure 
 import os, os.path, subprocess, configparser, getpass
 
 from runner import vars
-import lib.lastpass
+try:
+    import lib.lastpass
+except ImportError:
+    subprocess.run("pip install --upgrade google-api-python-client")
+    import lib.lastpass
 import lib.webfaction
 import sys
 

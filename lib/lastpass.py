@@ -1,15 +1,15 @@
 import os, configparser
 
-import lib.drive
 import lib.password_creator
 import lib._lastpass.vault
 from runner import vars
 from lib.errors import SmashException
 import getpass
+from lib import encoder
 
 lastpass_username = vars.credentials_conf.get('lastpass', 'username', fallback=None)
 lastpass_password = vars.credentials_conf.get('lastpass', 'password', fallback=None)
-if vars.verbose:
+if vars.new_credentials:
     lastpass_username = lastpass_password = None
 
 def _prompt_for_credentials():
@@ -17,11 +17,11 @@ def _prompt_for_credentials():
     if not lastpass_username:
         lastpass_username = input("What's your lastpass username (your sebodev email): ")
         save_username(lastpass_username)
-    elif vars.verbose:
+    elif vars.new_credentials:
         save_username(lastpass_username)
 
     lastpass_password = retrieve_password()
-    if not lastpass_password or vars.verbose:
+    if not lastpass_password or vars.new_credentials:
         lastpass_password = getpass.getpass("what's your lastpass password: ") #getpass behaves like input(), except the user input is not displayed on the screen
         save_password(lastpass_password)
 
@@ -86,26 +86,9 @@ def save_username(username):
 def save_password(password):
     """encrypts and saves password to a config file
     only works on Windows """
-    #we use a simple encryption with a password key stored by Google Drive that can only be retreieved by authenticating with Google Drive
-    #and we use a built-in encryption function to windows that only can be decrypted from a program run on the computer it was encrypted from
-    #I don't know if there is any such function on Macs, so we'll just revert back to the defualt behaviour of asking the for a password each time on a mac
     if os.name == 'nt':
-        try:
-            import win32crypt
-        except:
-            if vars.verbose:
-                print("If you don't want to have to type in the password each time, you can install the python extension from https://sourceforge.net/projects/pywin32/files/pywin32/Build%20220/ so I can more securely save the password on the computer")
 
-        drive_dir = vars.google_drive_smash_utils_dir
-        if not drive_dir.is_dir():
-            drive_dir.mkdir()
-
-        key_file = drive_dir / "lastpass-key-part1"
-        key = lib.password_creator.create(20)
-        key_file.write_text(key)
-
-        encoded1 = win32crypt.CryptProtectData(password.encode()).hex()
-        encoded2 = _encode(key, encoded1).hex()
+        encoded2 = encoder.encrypt(password)
 
         vars.credentials_conf.set('lastpass', 'password', encoded2)
 
@@ -115,37 +98,10 @@ def save_password(password):
 def retrieve_password():
     """retrieves a password saved with save_password
     only works on windows"""
-    try:
-        import win32crypt
-    except:
-        return
+    if os.name == 'nt':
 
-    password = vars.credentials_conf.get('lastpass', 'password', fallback=None)
-    if not password:
-        return
+        password = vars.credentials_conf.get('lastpass', 'password', fallback=None)
+        if not password:
+            return
 
-    key_file = vars.google_drive_smash_utils_dir / "lastpass-key-part1"
-    key = key_file.read_text()
-    password = _decode(key, bytes.fromhex(password).decode())
-
-    password = win32crypt.CryptUnprotectData(bytes.fromhex(password))[1]
-
-    return password.decode()
-
-
-def _encode(key, clear):
-    enc = []
-    for i in range(len(clear)):
-        key_c = key[i % len(key)]
-        enc_c = chr((ord(clear[i]) + ord(key_c)) % 256)
-        enc.append(enc_c)
-    return "".join(enc).encode()
-
-def _decode(key, enc):
-    dec = []
-    enc = enc
-    for i in range(len(enc)):
-        key_c = key[i % len(key)]
-        dec_c = chr((256 + ord(enc[i]) - ord(key_c)) % 256)
-        dec.append(dec_c)
-    return "".join(dec)
+        return encoder.unencrypt(password)

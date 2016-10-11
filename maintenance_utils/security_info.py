@@ -1,12 +1,14 @@
 import subprocess
 import lxml.etree
 from runner import vars
+from lib import passwords
+
 tmp_dir = vars.storage_dir / "tmp"
 
 def get_lockout_data(ssh_user, host, db_user, db_password, database):
     output_file = tmp_dir / (database + "_MySqlDump.xml")
     cmd = 'ssh {}@{} "mysqldump -u {} -p{} {} wp_itsec_log --xml | gzip -c" | gzip -d > {}'.format(ssh_user, host, db_user, db_password, database, output_file)
-
+    print(cmd)
     #run the command while removing a couple of expected errors from the output
     errors = subprocess.PIPE
     out = subprocess.Popen(cmd, shell=True, stderr=errors)
@@ -20,6 +22,7 @@ def get_lockout_data(ssh_user, host, db_user, db_password, database):
 
 def numberOfLockouts(ssh_user, host, db_user, db_password, database):
     data = get_lockout_data(ssh_user, host, db_user, db_password, database)
+    print('data', data)
     user_logging  = data.xpath("row/field[@name='log_type'][text()='user_logging']/..")
     lockouts      = data.xpath("row/field[@name='log_type'][text()='lockout']/..")
     brute_force   = data.xpath("row/field[@name='log_type'][text()='brute_force']/..")
@@ -41,10 +44,30 @@ def numberOfLockouts(ssh_user, host, db_user, db_password, database):
                 "brute_force_attempts": len(get_hosts(brute_force))
             }
 
-def main():
-    ssh_user = "wpwarranty"
-    host = "web534.webfaction.com"
-    db_user = "cdcutah"
-    db_password = "4LfOUmUN3nw3"
-    database = "cdcutah"
+def main(app_name, ftp_search_term, ssh_search_term=None):
+    if ssh_search_term is None:
+        ssh_search_term = ftp_search_term
+
+    try:
+        name, host, ssh_user, ssh_password = passwords.get_ssh_credentials(ssh_search_term)
+    except passwords.CredentialsNotFound:
+        if vars.verbose:
+            print("could not find SSH credentials, attempting to use FTP credentials for SSH")
+        try:
+            name, host, ssh_user, ssh_password = passwords.get_ftp_credentials(ftp_search_term)
+        except passwords.CredentialsNotFound:
+            if vars.verbose:
+                print("could not find FTP credentials, attempting to use webfaction credentials for SSH")
+            try:
+                name, host, ssh_user, ssh_password = passwords.get_ftp_credentials(ftp_search_term)
+            except passwords.CredentialsNotFound:
+                raise Exception("Could not find any lastpass credentials using the search term {}".format(ssh_search_term)) from None
+
+    database, db_host, db_user, db_password =  passwords.get_db_credentials(ftp_search_term, app_name)
+
+    # ssh_user = "wpwarranty"
+    # host = "web534.webfaction.com"
+    # db_user = "cdcutah"
+    # db_password = "4LfOUmUN3nw3"
+    # database = "cdcutah"
     print( numberOfLockouts(ssh_user, host, db_user, db_password, database) )
