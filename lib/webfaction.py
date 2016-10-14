@@ -6,15 +6,30 @@ from runner import vars
 
 from . import servers
 
-#the xmlrpc object for communicating with webfaction see https://docs.webfaction.com/xmlrpc-api/tutorial.html#getting-started and https://docs.webfaction.com/xmlrpc-api/apiref.html#method-login
-#the session id will automatically be provided
+#this will be a dictionary containing extra info about the last account connected to with the connect() function
+current_account = None
+xmlrpc_cache = {}
+current_account_cache = {}
+
+def connect(server):
+    global current_account, xmlrpc_cache
+    if server in xmlrpc_cache:
+        current_account = current_account_cache[server]
+        return xmlrpc_cache[server]
+
+    webfaction = xmlrpc.client.ServerProxy("https://api.webfaction.com/")
+    ftp_username = vars.webfaction[server]["ssh-username"]
+    ftp_password = vars.webfaction[server]["ssh-password"]
+    if vars.verbose:
+        print("logging into webfaction with the credentials {} and {}".format(ftp_username, ftp_password))
+    wf_id, current_account = webfaction.login(ftp_username, ftp_password)
+
+    xmlrpc_cache[server] = webfaction, wf_id
+    current_account_cache[server] = current_account
+    return webfaction, wf_id
 
 def xmlrpc_connect(server):
-    webfaction = xmlrpc.client.ServerProxy("https://api.webfaction.com/")
-    ftp_username = vars.webfaction[server]["ftp-username"]
-    ftp_password = vars.webfaction[server]["ftp-password"]
-    wf_id = webfaction.login(ftp_username, ftp_password)[0]
-    return webfaction, wf_id
+    return connect(server)
 
 def get_webapps(server):
     wf, wf_id = xmlrpc_connect(server)
@@ -28,9 +43,6 @@ def get_webapps(server):
 
 def interactively_add_conf_entry(name):
     return servers.interactively_add_conf_entry(name)
-
-def maybe_add_server_entry(entry):
-    return servers.maybe_add_server_entry(entry)
 
 def add_conf_entry(name, lastpass_ftp_name=None, lastpass_ssh_name=None, ssh_is_ftp=False):
     return servers.add_conf_entry(name, lastpass_ftp_name, lastpass_ssh_name, ssh_is_ftp)

@@ -7,7 +7,23 @@ usage_help_str = '''smash command [options]
 Run smash --setup to install this script
 '''
 
-parser = argparse.ArgumentParser(epilog="More info can be found at http://sitesmash.com/docs/docs/maintenance/other/smash-utils/", usage=usage_help_str, add_help=False)
+#we use a custom help formatter to avoid duplication of the metavars when displaying the help
+class CustomHelpFormatter(argparse.HelpFormatter):
+    def _format_action_invocation(self, action):
+        if not action.option_strings or action.nargs == 0:
+            return super()._format_action_invocation(action)
+        default = self._get_default_metavar_for_optional(action)
+        args_string = self._format_args(action, default)
+        if action.nargs == "*" and action.metavar:
+            if isinstance(action.metavar, str):
+                args_string = "[{}]".format(action.metavar)
+            else:
+                args_string = " ".join(action.metavar)
+        return ', '.join(action.option_strings) + ' ' + args_string
+
+fmt = lambda prog: CustomHelpFormatter(prog)
+
+parser = argparse.ArgumentParser(formatter_class=fmt, epilog="More info can be found at http://sitesmash.com/docs/docs/maintenance/other/smash-utils/", usage=usage_help_str, add_help=False)
 
 maintenance = parser.add_argument_group('Maintenance and general purpose')
 wordpress = parser.add_argument_group('Wordpress: \nA project name must be specified before using one of these options')
@@ -28,12 +44,13 @@ other = parser.add_argument_group('Other options')
 #
 
 wordpress.add_argument("-n", "--new", help="Runs through an interactive session to help you get things setup.", action="store_true")
-wordpress.add_argument("-_", "--new_s-project", default="", help="Create a new _s project" )
-wordpress.add_argument("--wordpress", "--wp", default="", help="sets up a new wordpress site")
-wordpress.add_argument("-e", "--existing_s-project", nargs="*", metavar=("app-name", "server", "theme"), default="", help="Downloads a theme. Also attempts to run npm install and to make the theme work with the atom editor's remote-sync plugin")
+wordpress.add_argument("-_", "--_s-project", default="", help="Create a new _s project")
+wordpress.add_argument("--wordpress", "--wp", nargs="*", metavar=("site-name", "server"), default="", help="sets up a new wordpress site")
+wordpress.add_argument("--download", "--down", nargs="*", metavar="app-name server theme", default="", help="Downloads a theme. Also attempts to run npm install and to make the theme work with the atom editor's remote-sync plugin")
+wordpress.add_argument("-w", "--watch", metavar="project", default="", help="runs the gulp command. If you are in any folder within a gulp it still works, and if you are not within a gulp project folder it will prompt you for one")
 
-maintenance.add_argument("--wpw", nargs="*", default=[], metavar=("client name", "level of warranty (1, 2, or 3)"), help="Performs part of the initial setup for a new WordPress Warranty client. Right now this just sets up a maintenance log in Google Drive.")
-maintenance.add_argument("--migrate", nargs="*", help="copies a website from one server to another")
+maintenance.add_argument("--wpw", nargs="*", default=[], metavar=("client name", "level of warranty (1, 2, or 3)"), help="Performs part of the initial setup for a new WordPress Warranty client.")
+maintenance.add_argument("--migrate", nargs="*", help="copies a website from one server to another. Does not work yet.")
 maintenance.add_argument("--dns", nargs="*", default="", const=None, metavar=("domain.com", "output.txt"), help="Does a DNS lookup and optionally saves the results to a text file")
 maintenance.add_argument("--md5", nargs="?", default="", metavar="password", help="takes a password and outputs the md5 hash")
 maintenance.add_argument("--ssl", nargs="?", metavar="domain", help="checks the accounts on the wpwarranty webfaction account to see if any of them are expiring soon. Optionally pass in a specific website to check")
@@ -48,16 +65,15 @@ passwords.add_argument("--db", nargs="*", default="", metavar="search-term", hel
 
 other.add_argument("--setup", "--install", action="store_true", help="Runs through the initial setup of this script")
 other.add_argument("--update", help="updates this script", action="store_true")
-other.add_argument("--new-credentials", help="whenever credentials are needed, prompt for them, and replace the saved credentials with the new ones", action="store_true")
+other.add_argument("--new-credentials", help="whenever this script uses credentials, do not reuse saved credentials. You will be prompted for new credentials and the old one will be overwritten.", action="store_true")
 other.add_argument("-v", "--verbose", help="", action="store_true")
 other.add_argument("-h", "--help", action="help", help="")
 
 if len(sys.argv) == 1:
-    sys.argv.append('-h')
+    parser.print_help()
+    sys.exit(1)
 
 args, other_args = parser.parse_known_args()
-
-# args.current_project = None
 
 if other_args:
     if len(sys.argv) > 2:

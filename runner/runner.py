@@ -23,7 +23,22 @@ elif "--lockouts" in sys.argv:
 
 elif "--migrate" in sys.argv:
     from maintenance_utils import migrate
-    migrate.main()
+
+    try:
+        serverTo = args.migrate[0]
+    except IndexError:
+        serverTo = None
+    try:
+        serverFrom = int(args.migrate[1])
+    except IndexError:
+        serverFrom = None
+
+    while not serverTo:
+        serverTo = input('Enter the server entry you would like to migrate to: ')
+    while not serverFrom:
+        serverFrom = input('Enter the server entry you are migrating from: ')
+
+    migrate.migrate(serverFrom, serverTo)
 
 elif "--performance" in sys.argv:
     from maintenance_utils import performance_test
@@ -94,7 +109,10 @@ elif "--new" in sys.argv:
 
 elif "--dns" in sys.argv:
     from maintenance_utils import dns
-    domain = args.dns[0]
+    try:
+        domain = args.dns[0]
+    except IndexError:
+        domain = None
     try:
         dns_output_file = args.dns[1]
     except IndexError:
@@ -128,38 +146,36 @@ elif ("--md5" in sys.argv or "--hash" in sys.argv):
     md5.main(args.md5)
 
 elif ("--wp" in sys.argv or "--wordpress" in sys.argv):
-    while not args.wordpress:
-        args.wordpress = input('Enter a project (or a subdomain): ')
-    vars.change_current_project(args.wordpress)
+
+    try:
+        site = args.wordpress[0]
+    except IndexError:
+        site = None
+    while not site:
+        site = input("Enter the site name (example cdc.sebodev.com)")
+
+    try:
+        server = args.wordpress[1]
+    except IndexError:
+        server = input('Enter a server entry. Leave blank to use the Sebodev Webfaction server: ')
+        if not server:
+            server = "sebodev"
 
     #from wordpress_utils import wordpress_install
 
     from wordpress_utils import wordpress_install2
-    wordpress_install2.main(vars.current_project)
+    wordpress_install2.create(site, server)
 
-elif ("-_" in sys.argv or "--new_s-project" in sys.argv):
-    while not args.new_s_project:
-        args.new_s_project = input('Enter the project name: ')
-    vars.change_current_project(args.new_s_project)
+elif ("-_" in sys.argv or "_s-project" in sys.argv):
+    while not args._s_project:
+        args._s_project = input('Enter the project name: ')
+    vars.change_current_project(args._s_project)
     import wordpress_utils.new_project
 
-elif ("-e" in sys.argv or "--existing_s-project" in sys.argv):
+elif ("--down" in sys.argv or "--download" in sys.argv):
     from wordpress_utils import existing_project
-    try:
-        app_name = args.wpw[1]
-    except IndexError:
-        app_name = input('Enter the Webfaction app name: ')
-    try:
-        server = args.wpw[1]
-    except IndexError:
-        server = "sebodev"
-    try:
-        theme = args.wpw[2]
-    except IndexError:
-        theme = vars.current_project
-
-
-    existing_project.main(app_name, server, theme)
+    existing_project.parse_args(args.download)
 
 elif ("-w" in sys.argv or "--watch" in sys.argv):
+    vars.change_current_project(args.watch)
     import wordpress_utils.watch

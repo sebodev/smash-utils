@@ -12,15 +12,16 @@ to perform the initial setup
 
 Info for developers of this script:
 
-Execution starts with the smash.bat or smash.sh file, and continue to the runner/runner.py file
+Execution starts with the smash.bat or smash.sh file, and continues to the runner/runner.py file
 
 If you would like to add a new command, add a file to the wordpress_utils or maintenance_utils folder
-You will then need to add a new entry to the runner/runner.py for your script
+You will then need to add a new entry to runner/runner.py to call your python file
 You will also need to add an argparse entry in runner/get_cmd_line_options.py
 
-There isn't much boilerplate and any of the utils modules could easily be made to run without being called by the runner which is nice.
-
-You will want to take a look at what's in the runner/vars.py module. It has the location to store user specific data
-along with various pieces of info that have been stored in config files.
+You will want to take a look at what's in the runner/vars.py module. There are some useful pieces of info stored in there like
+the locations of folders where smash-utils stores data
+and various pieces of info that have been stored in config files.
 Also the lib/webfaction.py module is pretty handy for interacting with Webfaction.
-You can get any password you need with the lib/lastpass.find() function
+FTP and SSH passwords are in the vars.servers variable.
+You can also use the lib/passwords module to find various types of passwords.
+The passwords module is lacking, so you may also want to use lib/lastpass and wordpress_utils.db_passwords modules.

@@ -1,41 +1,58 @@
 '''Creates a new wordpress site on a webfaction server
 '''
 
-import os, sys, time, re
+import os, sys, time, re, socket
 import urllib.request, urllib.parse, urllib.error, urllib.parse, unittest
 
 from runner import vars
 from lib import servers
 from lib import webfaction
 from lib import password_creator
+from lib.errors import SmashException
 
-def main(website, server=None):
-    if not server:
-        #server = "sebodev"
-        server = "wpwarranty"
+CURRENT_WORDPRESS_VERSION = "wordpress_461"
 
-    website = website.replace(' ', '')
-    app_name = website.replace("http://", "").replace("https://", "")
+#app_type can also be static_php70
+def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
 
+    site = website.replace("https://", "").replace("https://", "").replace("www.", "").replace(" ", "").rstrip("/")
+    ip = socket.gethostbyname(vars.servers[server]["host"])
     webfaction_user = vars.servers[server]["ssh-username"]
     webfaction_passwd = vars.servers[server]["ssh-password"]
+
+    #make everything up to the first period the app_name. If there is no period, that's an impossible website.
+    #We must have been given the subdomain name only, and so we prompt the user to enter the website name
+    app_name = site
+    end = app_name.find(".")
+    if end > 0:
+        app_name = app_name[:end]
+    else:
+        wf, wf_id = webfaction.xmlrpc_connect(server)
+        user = wf.system(wf_id, 'echo "$USER"')
+        site_guess = site + ".{}.com".format(user)
+
+        if (input("Is this WordPress site for "+site_guess+"[yes/No]")).startswith("y"):
+            site = site_guess
+        else:
+            site = input("What is the WordPress site you would like to create: ")
+
     wf, wf_id = webfaction.xmlrpc_connect(server)
 
-    #wf.create_app(wf_id, website, "static_php70")
-    sebodev_ip = "75.126.217.39"
-    wpwarranty_ip = "75.126.24.91"
-    ip = wpwarranty_ip
-    app_name = website.replace(".com", "").replace(".org", "")[:12]
+    #Note from Webfaction: MySQL database names are limited to 16 characters. Therefore, the WordPress application name
+    #must be less than 15 characters minus your username.
+    #Also application names are limited to twelve characters
+    max_length = max(12, 15-len(webfaction.current_account["username"]))
+    site_name = app_name
+    app_name = app_name[:max_length]
     https = False
-    app_type = "static_php70"
-    app_type = "wordpress_461"
-    site = website + ".wpwarranty.webfactional.com"
-    subdomains = [site]
+    subdomains = [site, "www"+site]
 
+    wf.create_domain(wf_id, subdomains[0], "www")
     res = wf.create_app(wf_id, app_name, app_type)
     wp_password = res['extra_info']
-    print("wordpress password: %s" % wp_password)
-    res = wf.create_website(wf_id, website, ip, https, subdomains, [app_name, "/"])
+    if vars.verbose:
+        print("wordpress password: %s" % wp_password)
+    res = wf.create_website(wf_id, site_name, ip, https, subdomains, [app_name, "/"])
 
     try:
         site_id = res['id']
@@ -43,8 +60,10 @@ def main(website, server=None):
     except:
         raise Exception("Failed to create the website :( I couldn't find an id for the website and that's all I know")
 
-    #db_password = lib.password_creator.create(8)
-    #print(wf.create_db(wf_id, app_name, "mysql", db_password))
+    if "wordpress" not in app_type:
+        #db_password = lib.password_creator.create(8)
+        #print(wf.create_db(wf_id, app_name, "mysql", db_password))
+        return
 
 
 
@@ -61,7 +80,6 @@ def main(website, server=None):
     from selenium.webdriver.common.action_chains import ActionChains
 
     wp_initial_passwd = wp_password
-    website_name = website
 
 
     if True:
@@ -114,7 +132,7 @@ def main(website, server=None):
         Select(driver.find_element_by_id("role")).select_by_visible_text("Administrator")
         driver.find_element_by_id("createuser").click()
         driver.find_element_by_id("createusersub").click()
-        driver.get('http://' site + "/wp-login.php?action=logout")
+        driver.get('http://' + site + "/wp-login.php?action=logout")
         driver.find_element_by_link_text("log out").click()
 
 

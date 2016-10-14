@@ -19,7 +19,7 @@ def prompt_for_task(tasks_to_run):
             else:
                 ans = input("In that case the theme must already exist on webfaction, and we just need to copy it to this computer. Type yes or no").lower()[0]
                 if ans == 'y':
-                    return "e"
+                    return "download"
                 else:
                     print("I give up. I have no idea what you want to do. Type sebo --help for a full list of options")
         else:

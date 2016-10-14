@@ -36,3 +36,4 @@ subprocess.call(command, cwd=vars.project_dir, shell=True)
 
 print('Upload complete. Configuring project...')
 from . import configure_project
+configure_project.setup("sebodev")

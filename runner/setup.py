@@ -20,7 +20,7 @@ except ImportError:
 import lib.webfaction
 import sys
 
-def setup_webfaction_conf():
+def setup_servers_conf():
     lib.webfaction.add_conf_entry("sebodev", "Sebodev FTP", "Sebodev SSH")
     lib.webfaction.add_conf_entry("wpwarranty", ssh_is_ftp=True)
 
@@ -111,13 +111,13 @@ def main():
             install_dependencies()
         if the_input.startswith("c"):
             save_personal_info()
-            setup_webfaction_conf()
+            setup_servers_conf()
             save_locations()
     else:
         print("Hola! Let's get things started")
         print("First off, let's go through some yes/no questions\n")
         save_personal_info()
-        setup_webfaction_conf()
+        setup_servers_conf()
         print("\nNow we need a couple of locations on your computer")
         save_locations()
         check_path()

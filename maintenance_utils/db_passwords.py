@@ -16,18 +16,23 @@ def find_with_ftp_search(domain, wp_config_folder):
     return find2(wp_config_folder, host, user, password)
 
 def find(server_entry, wp_config_folder):
+    """ finds the database credentials returning the tuple (name, host, user, password)"""
     lib.webfaction.maybe_add_server_entry(server_entry)
     host = vars.servers[server_entry]["host"]
-    host = vars.servers[server_entry]["ftp-user"]
-    host = vars.servers[server_entry]["ftp-password"]
+    user = vars.servers[server_entry]["ftp-user"]
+    password = vars.servers[server_entry]["ftp-password"]
     return find2(wp_config_folder, host, user, password)
 
-def find2(wp_config_folder, host, user, password):
+def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
+    """ finds the database credentials
+    wp_config_folder is relative to the directory that first opens up when you ftp into the server
+    If this is a webfaction server wp_config_folder can also be a webapp
+    returns the tuple (name, host, user, password)"""
     if vars.verbose:
         print("using the ftp credentials host={} user={} password={}".format(host, user, password))
 
-    with ftplib.FTP(host) as ftp:
-        ftp.login(user, password)
+    with ftplib.FTP(ftp_host) as ftp:
+        ftp.login(ftp_user, ftp_password)
         #print(ftp.dir())
         wp_config_folder.replace("webapps/", "")
         try:
@@ -95,6 +100,9 @@ def get_define_value(data, define_variable):
     return ret
 
 def main(domain, app_name):
+    print(vars.servers[domain])
+    return
+
     if not app_name:
         app_name = domain.replace("http://", "").replace("https://", "").replace(".com", "").replace(".org", "")
 

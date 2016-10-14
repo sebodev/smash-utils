@@ -2,6 +2,7 @@
 created from command line arguments and from data in config files. '''
 import configparser, sys
 from pathlib import Path
+from lib.errors import SmashException
 
 def _get_project_from_dir(the_dir):
     ''' returns which project a directory is inside of or None'''
@@ -23,7 +24,7 @@ def change_current_project(project, new_theme=None):
     if theme != current_project:
         project_dir = project_dir / theme
     #project_dir = str(project_dir)
-    webfaction_theme_dir = '/home/%s/webapps/%s/wp-content/themes/%s/' % (ftp_username, current_project, theme)
+    webfaction_theme_dir = '/home/%s/webapps/%s/wp-content/themes/%s/' % ("sebodev", current_project, theme)
 
 script_dir = Path(Path(__file__).resolve().parent.parent) # just getting the parent directory of this file
 storage_dir = Path.home() / '.smash-utils' #store files in here that you do not want to have committed like the user credentials config
@@ -45,35 +46,13 @@ credentials_conf = configparser.RawConfigParser()
 credentials_conf_loc = conf_dir / "credentials.conf"
 credentials_conf.read(str(credentials_conf_loc))
 
-webfaction_conf = configparser.RawConfigParser()
-webfaction_conf_loc = conf_dir / "servers.conf"
-webfaction_conf.read(str(webfaction_conf_loc))
+servers_conf = configparser.RawConfigParser()
+servers_conf_loc = conf_dir / "servers.conf"
+servers_conf.read(str(servers_conf_loc))
 
 google_drive_client_secret = credentials_conf.get('google-drive', 'client-secret', fallback=None)
 
-#I will be removing these soon. Grab this info from the vars.servers["server-name"] dictionary instead
-SERVER = 'wpwarranty'
-ftp_host             = webfaction_conf.get(SERVER, 'host', fallback=None)
-ssh_username         = webfaction_conf.get(SERVER, 'ssh-username', fallback=None)
-ssh_password         = webfaction_conf.get(SERVER, 'ssh-password', fallback=None)
-ftp_username         = webfaction_conf.get(SERVER, 'ftp-username', fallback=None) or ssh_username
-ftp_password         = webfaction_conf.get(SERVER, 'ftp-password', fallback=None) or ssh_password
 
-servers = {}
-webfaction = {}
-def save_webfaction_conf_entries():
-    """saves the data in webfaction_conf to the webfaction data"""
-    global servers, webfaction
-    for section in webfaction_conf.sections():
-        servers[section] = {}
-        for (key, val) in webfaction_conf.items(section):
-            servers[section][key] = val
-    webfaction = servers
-save_webfaction_conf_entries()
-#import pprint; pprint.pprint(webfaction)
-
-# sebo_conf = sebo_conf_loc = projects_root_dir = google_drive_client_secret = installed = None
-# google_drive_root_dir = google_drive_smash_utils_dir = google_drive_maintenance_dir = None
 def save_sebo_conf_vars():
     global sebo_conf, sebo_conf_loc, projects_root_dir, storage_dir, installed
     global google_drive_smash_utils_dir, google_drive_maintenance_dir, google_drive_client_secret, google_drive_root_dir
@@ -112,3 +91,35 @@ new_credentials     = args.new_credentials
 
 if current_project:
     change_current_project(current_project)
+
+#A custom dictionary class is used for the servers dictionary that will add a new entry,
+#prompting the user for the necessary info,
+#instead of raising a KeyError
+#use the exists function to test if a key is in the dictionary
+class ServersDict(dict):
+    from lib import servers as s
+    def __getitem__( self, name, prompt=True ):
+        try:
+            return super( ServersDict, self ).__getitem__( name )
+        except KeyError as err:
+            if prompt:
+                if (input("Would you like to add a new server entry for %s [yes/No]" % name).lower().startswith("y")):
+                    return s.interactively_add_conf_entry(name)
+                else:
+                    raise KeyError("couldn't find the server entry '{}'".format(name))
+
+    def exists(self, server_entry):
+        return bool(self.__getitem__(server_entry, False))
+
+servers = ServersDict()
+webfaction = ServersDict()
+def save_servers_conf_entries():
+    """saves the data in the servers.txt file to the servers dictionary"""
+    global servers, webfaction
+    for section in servers_conf.sections():
+        servers[section] = {}
+        for (key, val) in servers_conf.items(section):
+            servers[section][key] = val
+    webfaction = servers
+save_servers_conf_entries()
+#import pprint; pprint.pprint(servers)

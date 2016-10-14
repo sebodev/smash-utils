@@ -11,18 +11,19 @@ def find(search_term):
 
     root = lxml.etree.parse(logins_file)
     matches = root.xpath(".//Server//*[contains(text(),'"+ search_term +"')]")
+    matches = set([el.getparent() for el in matches])
 
     for el in matches:
-        el = el.getparent()
+        name = el.find("Name").text
         host = el.find("Host").text
         user = el.find("User").text
-        passwd = el.find("Pass").text
-        name = el.find("Name").text
+        passwd = el.find("Pass").text or ""
         encoding = el.find("EncodingType").text.lower()
         if encoding != "auto" and encoding != "base64":
             raise Exception("Sorry, the password was encrypted using the encryption method '%s' which I do not yet understand how to work with" % encoding)
 
         passwd = base64.b64decode(passwd).decode("utf-8")
+
         yield (name, host, user, passwd)
 
 def main(search_term):

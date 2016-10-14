@@ -84,14 +84,13 @@ def main(domain, output_file=None):
     except:
         print("I just can't seem to find the name server")
 
-    print(email_server_msg.strip())
+    if email_server_msg:
+        print(email_server_msg.strip())
 
     try:
         print("Registrar:", whois_dict["Registrar"])
     except KeyError:
-        try:
-            print("Registrar:", whois_dict["Organization"])
-        except KeyError:
-            print("I just can't seem to find the registrar")
-
-    import pprint; pprint.pprint(whois_dict)
+        items = whois_dict.items()
+        for key, val in whois_dict.items():
+            if ("registrar" in key.lower() or "organization" in key.lower()):
+                print(key+":", val)

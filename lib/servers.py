@@ -3,16 +3,26 @@ from lib.errors import SmashException
 from lib import lastpass
 import configparser
 from runner import vars
+from lib import webfaction
 
-servers = vars.servers
+def interactively_add_conf_entry(name=None):
 
-def interactively_add_conf_entry(name):
-    if not name:
-        name = input("what would you like to name this webfaction entry: ")
+    host = input("Enter the host (example web353.webfaction.com): ")
+    ftp_user = input("Enter the FTP username: ")
+    ftp_password = input("Enter the FTP password: ")
 
-    host = input("Enter the host for {}: ".format(name))
-    ftp_user = input("Enter the FTP username for {}: ".format(name))
-    ftp_password = input("Enter the FTP password for {}: ".format(name))
+    while not name:
+        try:
+            webfaction = xmlrpc.client.ServerProxy("https://api.webfaction.com/")
+            wf_id, current_account = webfaction.login(ftp_username, ftp_password)
+            name = webfaction.current_account["username"]
+        except:
+            #this must not be for a webfaction server
+            name = input("what would you like to name this server entry: ")
+
+    if vars.verbose and name in vars.server:
+        print("Warning: {} is already a server entry and will be overwritten.".format(name))
+
     same = input("Are the SSH credentials also {} & {} [yes/No]: ".format(ftp_user, ftp_password))
     if same.lower().startswith("y"):
         ssh_user = ftp_user
@@ -31,18 +41,18 @@ def maybe_add_server_entry(entry):
     interactively_add_conf_entry(entry)
 
 
-def add_conf_entry(name, lastpass_ftp_name=None, lastpass_ssh_name=None, ssh_is_ftp=False):
+def add_conf_entry(name, lastpass_ftp_query=None, lastpass_ssh_query=None, ssh_is_ftp=False):
     """adds a new credentials to the webfaction conf file
     name is the name by which these webfaction credentials are stored under in the conf file
     a search is also done using this name and is narrowed down by the keyword ftp or ssh
-    unless lastpass_ftp_name or lastpass_ssh_name is provided in which case the lastpass
-    title must exactly match lastpass_ftp_name or lastpass_ssh_name
+    unless lastpass_ftp_query or lastpass_ssh_query is provided in which case the lastpass
+    title must exactly match lastpass_ftp_query or lastpass_ssh_query
     ssh_is_ftp can be set to True if the ftp and ssh credentials are the same"""
 
-    if lastpass_ftp_name:
-        lastpass_ftp_account = lastpass.find_exact(lastpass_ftp_name)
+    if lastpass_ftp_query:
+        lastpass_ftp_account = lastpass.find_exact(lastpass_ftp_query)
         if lastpass_ftp_account is None:
-            raise SmashException("could not find a lastpass account with the title {}".format(lastpass_ftp_name))
+            raise SmashException("could not find a lastpass account with the title {}".format(lastpass_ftp_query))
     else:
         res = list(lastpass.find(name, "ftp"))
         lastpass_ftp_account = res[0]
@@ -50,10 +60,10 @@ def add_conf_entry(name, lastpass_ftp_name=None, lastpass_ssh_name=None, ssh_is_
             raise SmashException('found multiple possible entries in lastpass for "{}" with "{}" in the title. You\'ll need to Pass in the exact lastpass ftp and ssh names to this function.'.format(name, "ftp"))
 
 
-    if lastpass_ssh_name:
-        lastpass_ssh_account = lastpass.find_exact(lastpass_ssh_name)
+    if lastpass_ssh_query:
+        lastpass_ssh_account = lastpass.find_exact(lastpass_ssh_query)
         if lastpass_ssh_account is None:
-            raise SmashException("could not find a lastpass account with the title {}".format(lastpass_ssh_name))
+            raise SmashException("could not find a lastpass account with the title {}".format(lastpass_ssh_query))
     elif ssh_is_ftp:
         lastpass_ssh_account = lastpass_ftp_account
     else:
@@ -74,7 +84,7 @@ def add_conf_entry(name, lastpass_ftp_name=None, lastpass_ssh_name=None, ssh_is_
 def add_conf_entry2(name, host, ftp_user, ftp_password, ssh_user, ssh_password):
     """permamently saves the info passed in a conf file where it can be retrieved from the dictionary vars.webfaction using the name as the dictionary key"""
 
-    conf = vars.webfaction_conf
+    conf = vars.servers_conf
 
     try:
         conf.add_section(name)
@@ -87,8 +97,8 @@ def add_conf_entry2(name, host, ftp_user, ftp_password, ssh_user, ssh_password):
     conf.set(name, "ssh-username", ssh_user)
     conf.set(name, "ssh-password", ssh_password)
 
-    with vars.webfaction_conf_loc.open('w') as configfile:
+    with vars.servers_conf_loc.open('w') as configfile:
         conf.write(configfile)
 
     #refresh the vars.webfaction dictionary
-    vars.save_webfaction_conf_entries()
+    vars.save_servers_conf_entries()
