@@ -55,6 +55,12 @@ def save_locations():
     while not project_dir:
         project_dir = input("Type in the name of the folder you would like us to download wordpress themes into so you can work  your mad developer skills on them: ")
     google_drive_dir = input("Where is your Google Drive folder. Leave blank if Google Drive was never installed on the computer, but some things won't work: ")
+
+    if not sebo_conf.has_section('locations'):
+        sebo_conf.add_section('locations')
+    if not sebo_conf.has_section('setup_info'):
+        sebo_conf.add_section('setup_info')
+
     vars.sebo_conf.set("locations", "project_dir", project_dir)
     if google_drive_dir:
         vars.sebo_conf.set("locations", "google_drive", google_drive_dir)
@@ -64,10 +70,9 @@ def save_locations():
         assert(os.path.exists(google_drive_dir))
 
     vars.sebo_conf.set("locations", "stored_data", vars.storage_dir)
-    try:
-
-    except:
     vars.sebo_conf.set("setup_info", "setup_run", "True")
+    version = subprocess.check_output("git rev-parse --verify HEAD", shell=True)
+    vars.sebo_conf.set("setup_info", "version_first_installed", version)
 
     with vars.sebo_conf_loc.open('w') as configfile:
         vars.sebo_conf.write(configfile)
@@ -90,14 +95,13 @@ def install_dependencies():
 
     subprocess.run("apm install remote-sync", shell=True)
 
-    subprocess.run("pip install requests", shell=True)
-    subprocess.run("pip install requests --upgrade", shell=True)
-    subprocess.run("pip install lxml", shell=True)
-    subprocess.run("pip install lxml --upgrade", shell=True)
-
+    subprocess.run("pip install --upgrade requests", shell=True)
+    subprocess.run("pip install --upgrade lxml", shell=True)
+    subprocess.run("pip install --upgrade pycrypto", shell=True)
+    subprocess.run("pip install --upgrade google-api-python-client", shell=True)
 
 def main():
-    assert sys.version_info >= (3,5), "Big fat mean me says you have to be running Python 3.5+"
+    assert sys.version_info >= (3,5), "Big fat mean me says you have to be running Python 3.5+. You are currently running version {}".format(sys.version_info)
     if vars.installed:
         print("welcome back to the installer. What would you like to reconfigure?")
         print()

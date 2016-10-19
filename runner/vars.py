@@ -111,8 +111,14 @@ class ServersDict(dict):
     def exists(self, server_entry):
         return bool(self.__getitem__(server_entry, False))
 
-servers = ServersDict()
-webfaction = ServersDict()
+try:
+    servers = webfaction = ServersDict()
+except ImportError:
+    if not installed:
+        pass
+    else:
+        raise
+
 def save_servers_conf_entries():
     """saves the data in the servers.txt file to the servers dictionary"""
     global servers, webfaction
