@@ -70,9 +70,12 @@ def save_locations():
         assert(os.path.exists(google_drive_dir))
 
     vars.sebo_conf.set("locations", "stored_data", vars.storage_dir)
-    vars.sebo_conf.set("setup_info", "setup_run", "True")
-    version = subprocess.check_output("git rev-parse --verify HEAD", shell=True)
-    vars.sebo_conf.set("setup_info", "version_first_installed", version)
+    vars.sebo_conf.set("setup_info", "setup_ran", "True")
+    try:
+        version = subprocess.check_output("git rev-parse --verify HEAD", shell=True)
+        vars.sebo_conf.set("setup_info", "version_first_installed", version)
+    except:
+        pass
 
     with vars.sebo_conf_loc.open('w') as configfile:
         vars.sebo_conf.write(configfile)
