@@ -50,8 +50,11 @@ def unencrypt(password):
     except:
         raise SmashException("Python Extensions not installed")
 
-    key_file = vars.google_drive_smash_utils_dir / "lastpass-key-part1"
-    key = key_file.read_text()
+    try:
+        key_file = vars.google_drive_smash_utils_dir / "lastpass-key-part1"
+        key = key_file.read_text()
+    except FileNotFoundError:
+        raise SmashException("Could not find the LastPass Password decryption Key in Google Drive. Run smash-utils with the --new-credentials flag to regenerate the key")
 
     if not key:
         raise SmashException("Unable to retrieve decryption key from Google Drive")

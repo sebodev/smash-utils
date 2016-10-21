@@ -10,16 +10,27 @@ if "--setup" in sys.argv:
 
 elif "--lockouts" in sys.argv:
     from maintenance_utils import security_info
-    app_name = args.lockouts[0]
+
     try:
-        ftp_search_term = args.lockouts[1]
-    except:
-        ftp_search_term = input("what server is this on (example wpwarranty): ")
-    try:
-        ssh_search_term = args.lockouts[2]
+        server = args.lockouts[0]
     except IndexError:
-        ssh_search_term = ftp_search_term
-    security_info.main(app_name, ftp_search_term, ssh_search_term)
+        server = input("what server is this on (example wpwarranty): ")
+
+    try:
+        app_name = args.lockouts[1]
+    except IndexError:
+        from lib import webfaction
+        webapps = webfaction.get_webapps(server)
+        app_name = input("Enter a Webfaction app name for {}: ".format(server))
+        while (app_name not in webapps):
+            print()
+            print("AVAILABLE APPS: ")
+            print(webapps)
+            print()
+            print("I'd love to look that up for you, but {} isn't an app on the server {}.".format(app_name, server))
+            app_name = input("I suppose I'll give you another chance. What app would you like to use: ")
+
+    security_info.main(server, app_name)
 
 elif "--migrate" in sys.argv:
     from maintenance_utils import migrate

@@ -3,6 +3,7 @@ created from command line arguments and from data in config files. '''
 import configparser, sys
 from pathlib import Path
 from lib.errors import SmashException
+from lib import servers as s
 
 def _get_project_from_dir(the_dir):
     ''' returns which project a directory is inside of or None'''
@@ -97,13 +98,12 @@ if current_project:
 #instead of raising a KeyError
 #use the exists function to test if a key is in the dictionary
 class ServersDict(dict):
-    from lib import servers as s
     def __getitem__( self, name, prompt=True ):
         try:
             return super( ServersDict, self ).__getitem__( name )
         except KeyError as err:
             if prompt:
-                if (input("Would you like to add a new server entry for %s [yes/No]" % name).lower().startswith("y")):
+                if not (input("Would you like to add a new server entry for %s [Yes/no]" % name).lower().startswith("n")):
                     return s.interactively_add_conf_entry(name)
                 else:
                     raise KeyError("couldn't find the server entry '{}'".format(name))

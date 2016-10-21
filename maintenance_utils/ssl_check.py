@@ -6,24 +6,36 @@ import datetime
 import lib.webfaction
 from runner import vars
 
-def main(domain):
-    if domain:
-        if not ssl_expires_soon(domain,  suppressErrors=False):
-            print("{} is in good shape. It's SSL certificate doesn't expire for {} days.".format(domain, ssl_valid_time_remaining(domain).days))
+def main(domain_or_server=None):
+    """ checks when a domain expires.
+    domain can also be a Webfaction server entry."""
+
+    d_or_s = domain_or_server
+
+    if d_or_s in vars.servers:
+        check_server(d_or_s)
+    elif d_or_s:
+        check_domain(d_or_s)
     else:
+        d_or_s = input("Enter a domain or a Webfaction server entry to check: ")
+        main(d_or_s)
 
-        no_problems = True
-        server = "wpwarranty"
-        wf, wf_id = lib.webfaction.xmlrpc_connect(server)
+def check_domain(domain):
+    if not ssl_expires_soon(domain,  suppressErrors=False):
+        print("{} is in good shape. It's SSL certificate doesn't expire for {} days.".format(domain, ssl_valid_time_remaining(domain).days))
 
-        for data in wf.list_domains(wf_id):
-            if ssl_expires_soon(data["domain"]):
-                print("x", end="")
-                no_problems = False
-            else:
-                print(".", end="", flush=True)
-        if no_problems:
-            print("\nYou're looking good. All of your SSL certificates are up to date.")
+def check_server(server):
+    no_problems = True
+    wf, wf_id = lib.webfaction.xmlrpc_connect(server)
+
+    for data in wf.list_domains(wf_id):
+        if ssl_expires_soon(data["domain"]):
+            print("x", end="")
+            no_problems = False
+        else:
+            print(".", end="", flush=True)
+    if no_problems:
+        print("\nYou're looking good. All of your SSL certificates are up to date.")
 
 def ssl_expires_soon(domain, suppressErrors=True):
     """ Returns True and prints out a warning if a website's SSL certificate expires within 50 days. """

@@ -33,7 +33,7 @@ def xmlrpc_connect(server):
 
 def get_webapps(server):
     wf, wf_id = xmlrpc_connect(server)
-    wf.list_apps(wf_id)
+    apps = wf.list_apps(wf_id)
     return [app["name"] for app in apps]
 
 

@@ -5,6 +5,9 @@ import configparser
 from runner import vars
 from lib import webfaction
 
+def get(server, lookup):
+    return vars.servers[server][lookup]
+
 def interactively_add_conf_entry(name=None):
 
     host = input("Enter the host (example web353.webfaction.com): ")

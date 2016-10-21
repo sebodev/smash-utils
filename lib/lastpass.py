@@ -1,11 +1,13 @@
-import os, configparser
+import os, configparser, getpass
 
 import lib.password_creator
 import lib._lastpass.vault
-from runner import vars
 from lib.errors import SmashException
-import getpass
 from lib import encoder
+
+import sys
+sys.path.append(r"D:\projects\smash-utils\runner")
+import vars
 
 lastpass_username = vars.credentials_conf.get('lastpass', 'username', fallback=None)
 lastpass_password = vars.credentials_conf.get('lastpass', 'password', fallback=None)
@@ -97,6 +99,7 @@ def save_password(password):
 
 def retrieve_password():
     """retrieves a password saved with save_password
+    may raise lib.error.SmashException
     only works on windows"""
     if os.name == 'nt':
 

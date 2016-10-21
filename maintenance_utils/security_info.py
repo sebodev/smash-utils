@@ -2,6 +2,8 @@ import subprocess
 import lxml.etree
 from runner import vars
 from lib import passwords
+from lib import servers
+from maintenance_utils import db_passwords
 
 tmp_dir = vars.storage_dir / "tmp"
 
@@ -44,7 +46,7 @@ def numberOfLockouts(ssh_user, host, db_user, db_password, database):
                 "brute_force_attempts": len(get_hosts(brute_force))
             }
 
-def main(app_name, ftp_search_term, ssh_search_term=None):
+def search_lastpass_and_get_lockouts(app_name, ftp_search_term, ssh_search_term=None):
     if ssh_search_term is None:
         ssh_search_term = ftp_search_term
 
@@ -71,3 +73,9 @@ def main(app_name, ftp_search_term, ssh_search_term=None):
     # db_password = "4LfOUmUN3nw3"
     # database = "cdcutah"
     print( numberOfLockouts(ssh_user, host, db_user, db_password, database) )
+
+
+
+def main(server, app_name):
+    database, db_host, db_user, db_password =  db_passwords.find(server, app_name)
+    print( numberOfLockouts(servers.get(server, "ssh-username"), servers.get(server, "host"), db_user, db_password, database) )

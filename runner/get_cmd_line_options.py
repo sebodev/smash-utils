@@ -53,7 +53,7 @@ maintenance.add_argument("--wpw", nargs="*", default=[], metavar=("client name",
 maintenance.add_argument("--migrate", nargs="*", help="copies a website from one server to another. Does not work yet.")
 maintenance.add_argument("--dns", nargs="*", default="", const=None, metavar=("domain.com", "output.txt"), help="Does a DNS lookup and optionally saves the results to a text file")
 maintenance.add_argument("--md5", nargs="?", default="", metavar="password", help="takes a password and outputs the md5 hash")
-maintenance.add_argument("--ssl", nargs="?", metavar="domain", help="checks the accounts on the wpwarranty webfaction account to see if any of them are expiring soon. Optionally pass in a specific website to check")
+maintenance.add_argument("--ssl", nargs="?", metavar="domain", help="Checks if either a domain's ssl certificate is expiring soon, or if a webfaction server entry is passed in, checks all of the domains on that server")
 maintenance.add_argument("--performance", nargs="+", metavar=("domain", "output file"), help="Runs a webpagetest.org performance test. Pass in a location to store the CSV results")
 maintenance.add_argument("--lockouts", nargs="+", metavar=("app-name, ftp-search-term", "ssh-search-term"), help="Checks the number of ithemes security lockouts logged in a database")
 
@@ -61,7 +61,7 @@ passwords.add_argument("--passwords", "--pass", nargs="?", default="", metavar="
 passwords.add_argument("--filezilla", "--fz", nargs="?", default="", metavar="entry", help="Filezilla's interface hides passwords, but if you provide the name from Filezilla's site manager, I'll tell you the password")
 passwords.add_argument("--lastpass", "--lp", nargs="?", default="", metavar="search-term", help="Searches Lastpass for passwords")
 passwords.add_argument("--chrome", nargs="?", default="", metavar="search-term", help="Searches Google Chrome for passwords")
-passwords.add_argument("--db", nargs="*", default="", metavar="search-term", help="Grabs database credentials from the site's wp-config.php file")
+passwords.add_argument("--db", nargs="*", default="", metavar="", help="Grabs database credentials from the site's wp-config.php file")
 
 other.add_argument("--setup", "--install", action="store_true", help="Runs through the initial setup of this script")
 other.add_argument("--update", help="updates this script", action="store_true")

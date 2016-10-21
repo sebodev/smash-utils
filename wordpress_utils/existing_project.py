@@ -45,7 +45,7 @@ def parse_args(args):
         theme = args[2]
     except IndexError:
         from lib import webfaction
-        wf, wf_id = webfaction.xmlrpc_connect(server)
+        wf, wf_id = webfaction.connect(server)
 
         user = wf.system(wf_id, 'echo "$USER"')
         cmd = "ls /home/{}/webapps/{}/wp-content/themes/".format(user, app_name)

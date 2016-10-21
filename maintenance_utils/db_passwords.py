@@ -16,10 +16,10 @@ def find_with_ftp_search(domain, wp_config_folder):
     return find2(wp_config_folder, host, user, password)
 
 def find(server_entry, wp_config_folder):
-    """ finds the database credentials returning the tuple (name, host, user, password)"""
-    lib.webfaction.maybe_add_server_entry(server_entry)
+    """ finds the database credentials returning the tuple (name, host, user, password)
+    wp_config_folder can be a webapp instead"""
     host = vars.servers[server_entry]["host"]
-    user = vars.servers[server_entry]["ftp-user"]
+    user = vars.servers[server_entry]["ftp-username"]
     password = vars.servers[server_entry]["ftp-password"]
     return find2(wp_config_folder, host, user, password)
 
@@ -100,8 +100,7 @@ def get_define_value(data, define_variable):
     return ret
 
 def main(domain, app_name):
-    print(vars.servers[domain])
-    return
+    vars.servers[domain]
 
     if not app_name:
         app_name = domain.replace("http://", "").replace("https://", "").replace(".com", "").replace(".org", "")
