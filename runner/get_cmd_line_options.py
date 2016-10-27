@@ -19,6 +19,7 @@ class CustomHelpFormatter(argparse.HelpFormatter):
                 args_string = "[{}]".format(action.metavar)
             else:
                 args_string = " ".join(action.metavar)
+        comma_append = "," if len(action.option_strings)>1 else ""
         return ', '.join(action.option_strings) + ' ' + args_string
 
 fmt = lambda prog: CustomHelpFormatter(prog)
@@ -50,7 +51,9 @@ wordpress.add_argument("--download", "--down", nargs="*", metavar="app-name serv
 wordpress.add_argument("-w", "--watch", metavar="project", default="", help="runs the gulp command. If you are in any folder within a gulp it still works, and if you are not within a gulp project folder it will prompt you for one")
 
 maintenance.add_argument("--wpw", nargs="*", default=[], metavar=("client name", "level of warranty (1, 2, or 3)"), help="Performs part of the initial setup for a new WordPress Warranty client.")
-maintenance.add_argument("--migrate", nargs="*", help="copies a website from one server to another. Does not work yet.")
+maintenance.add_argument("--backup", "--back", nargs="*", metavar=["server-entry", "server-directory", "local_directory"], help="Performs a files and database backup. server-directory can also be a webfaction app-name.")
+maintenance.add_argument("--restore", nargs="*", default="", metavar=["server-entry", "server-directory", "sql-dump", "backup.tar.gz"], help="restores a backup. server-directory can also be a webfaction app. A website wil be created for the app if the app does not exist.")
+maintenance.add_argument("--migrate", nargs="*", default="", help="copies a website from one server to another. Does not work yet.")
 maintenance.add_argument("--dns", nargs="*", default="", const=None, metavar=("domain.com", "output.txt"), help="Does a DNS lookup and optionally saves the results to a text file")
 maintenance.add_argument("--md5", nargs="?", default="", metavar="password", help="takes a password and outputs the md5 hash")
 maintenance.add_argument("--ssl", nargs="?", metavar="domain", help="Checks if either a domain's ssl certificate is expiring soon, or if a webfaction server entry is passed in, checks all of the domains on that server")
@@ -61,7 +64,7 @@ passwords.add_argument("--passwords", "--pass", nargs="?", default="", metavar="
 passwords.add_argument("--filezilla", "--fz", nargs="?", default="", metavar="entry", help="Filezilla's interface hides passwords, but if you provide the name from Filezilla's site manager, I'll tell you the password")
 passwords.add_argument("--lastpass", "--lp", nargs="?", default="", metavar="search-term", help="Searches Lastpass for passwords")
 passwords.add_argument("--chrome", nargs="?", default="", metavar="search-term", help="Searches Google Chrome for passwords")
-passwords.add_argument("--db", nargs="*", default="", metavar="", help="Grabs database credentials from the site's wp-config.php file")
+passwords.add_argument("--db", nargs="*", default="", metavar=("server", "app-name"), help="Grabs database credentials from the site's wp-config.php file")
 
 other.add_argument("--setup", "--install", action="store_true", help="Runs through the initial setup of this script")
 other.add_argument("--update", help="updates this script", action="store_true")
@@ -77,6 +80,6 @@ args, other_args = parser.parse_known_args()
 
 if other_args:
     if len(sys.argv) > 2:
-        raise Exception("Recieved the extra arguments: %s" % " & ".join(other_args))
+        raise Exception("Recieved the extra arguments %s" % " and ".join(other_args))
     else:
         raise Exception("Didn't recognize %s. Spelling mistaek?" % " and ".join(other_args))

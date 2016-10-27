@@ -13,13 +13,13 @@ def download(app, server, theme):
     if not os.path.exists(project_parent_dir):
         os.makedirs(project_parent_dir)
 
-    cmd = "pscp -scp -pw {} -r {}@{}:{} {}".format(vars.servers[server]['ftp-password'], vars.servers[server]['ftp-username'], vars.servers[server]['host'], vars.webfaction_theme_dir, vars.project_dir)
+    cmd = "pscp -scp -pw {} -r {}@{}:{} {}".format(vars.servers[server]['ftp-password'], vars.servers[server]['ftp-username'], vars.servers[server]['host'], vars.servers_theme_dir, vars.project_dir)
     if vars.verbose:
         print("running command: " + cmd)
 
     subprocess.check_call(cmd, shell=True)
 
-    #subprocess.call(r"pscp -scp -i %UserProfile%\.ssh\sitesmash.ppk -r sebodev@webfaction:{} {}".format(vars.webfaction_theme_dir, vars.project_dir), shell=True)
+    #subprocess.call(r"pscp -scp -i %UserProfile%\.ssh\sitesmash.ppk -r sebodev@webfaction:{} {}".format(vars.servers_theme_dir, vars.project_dir), shell=True)
     print( "copied {} to {}".format(vars.current_project, vars.project_dir) )
     print("configuring")
     from . import configure_project

@@ -1,13 +1,13 @@
 import os, configparser, getpass
 
-import lib.password_creator
 import lib._lastpass.vault
 from lib.errors import SmashException
 from lib import encoder
+from lib import passwords
 
-import sys
-sys.path.append(r"D:\projects\smash-utils\runner")
-import vars
+#import sys
+#sys.path.append(r"D:\projects\smash-utils\runner")
+from runner import vars
 
 lastpass_username = vars.credentials_conf.get('lastpass', 'username', fallback=None)
 lastpass_password = vars.credentials_conf.get('lastpass', 'password', fallback=None)
@@ -52,25 +52,28 @@ def get_all_accounts():
     return vault.accounts
 
 def find(search_term, search_term2=None):
-    """A generator that finds lastpass passwords by username, url, or name.
-    Optionally narrow down the search by searching through the lastpass names of the results returned with search_term2"""
-    search_term = str(search_term).lower()
-    for password_obj in get_all_accounts():
-        for term in search_term.split():
-            if (
-                    term in str(password_obj.name).lower()
-                    or term in str(password_obj.url).lower()
-                    or term in str(password_obj.username).lower()
-                ):
-                if search_term2:
-                    if search_term2.lower() in str(password_obj.name).lower():
-                        yield password_obj
-                        break
-                else:
-                    yield password_obj
-                    break
+    return passwords.lastpass(search_term, search_term2)
 
-        #there is also password_obj.id and password_obj.group
+    # """A generator that finds lastpass passwords by username, url, or name.
+    # Optionally narrow down the search by searching through the lastpass names of the results returned with search_term2"""
+    #
+    # search_term = str(search_term).lower()
+    # for password_obj in get_all_accounts():
+    #     for term in search_term.split():
+    #         if (
+    #                 term in str(password_obj.name).lower()
+    #                 or term in str(password_obj.url).lower()
+    #                 or term in str(password_obj.username).lower()
+    #             ):
+    #             if search_term2:
+    #                 if search_term2.lower() in str(password_obj.name).lower():
+    #                     yield password_obj
+    #                     break
+    #             else:
+    #                 yield password_obj
+    #                 break
+    #
+    #     #there is also password_obj.id and password_obj.group
 
 def save_username(username):
     global lastpass_username

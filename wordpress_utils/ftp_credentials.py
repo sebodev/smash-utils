@@ -27,7 +27,7 @@ def setup_remote_sync(server):
         ".ftppass"
       ],
       "transport": "scp",
-      "target": """ + '"' + vars.webfaction_theme_dir + '"' + """,
+      "target": """ + '"' + vars.servers_theme_dir + '"' + """,
       "username": """ + '"' + ssh_username + '"' + """,
       "password": """ + '"' + ssh_password + '"' + """
     }

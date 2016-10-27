@@ -7,3 +7,7 @@ class SmashException(Exception):
             super(SmashException, self).__init__("\n\n"+title+": "+self.message)
         else:
             super(SmashException, self).__init__(title)
+
+class CredentialsNotFound(SmashException):
+    """used by the lib.passwords module when searching for a password and it cannot be found"""
+    pass

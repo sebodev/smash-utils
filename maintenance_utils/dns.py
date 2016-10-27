@@ -2,8 +2,11 @@
 import os, socket, subprocess
 import lib.whois
 from runner import vars
+from pathlib import Path
 
 def main(domain, output_file=None):
+    if output_file:
+        output_file = Path(output_file)
     domain = domain.replace("http://", "").replace("https://", "")
     domain = domain.rstrip("/")
 
@@ -36,7 +39,7 @@ def main(domain, output_file=None):
 
     #display nslookup and save to file
     cmd = 'nslookup -type=any %s'  % domain
-    res = subprocess.check_output( cmd ).decode("utf-8")
+    res = subprocess.check_output(cmd).decode("utf-8")
     output_file.write_text(res)
     if vars.verbose:
         print(res)

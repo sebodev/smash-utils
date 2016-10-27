@@ -1,5 +1,5 @@
-import lib.lastpass
+import lib.passwords
 
 def main(search_term):
-    for i in lib.lastpass.find(search_term):
-        print("\n%s\nusername: %s\npassword: %s\nurl: %s" % (i.name.decode('utf-8'), i.username.decode('utf-8'), i.password.decode('utf-8'), i.url.decode('utf-8')))
+    for i in lib.passwords.lastpass(search_term):
+        print("\n%s\nurl: %s\nusername: %s\npassword: %s" % (i.name, i.host, i.username, i.password))

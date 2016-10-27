@@ -38,11 +38,6 @@ def interactively_add_conf_entry(name=None):
 
     return name
 
-def maybe_add_server_entry(entry):
-    if entry in vars.servers:
-        return
-    interactively_add_conf_entry(entry)
-
 
 def add_conf_entry(name, lastpass_ftp_query=None, lastpass_ssh_query=None, ssh_is_ftp=False):
     """adds a new credentials to the webfaction conf file
@@ -85,7 +80,7 @@ def add_conf_entry(name, lastpass_ftp_query=None, lastpass_ssh_query=None, ssh_i
     add_conf_entry2(name, host, ftp_user, ftp_password, ssh_user, ssh_password)
 
 def add_conf_entry2(name, host, ftp_user, ftp_password, ssh_user, ssh_password):
-    """permamently saves the info passed in a conf file where it can be retrieved from the dictionary vars.webfaction using the name as the dictionary key"""
+    """permamently saves the info passed in a conf file where it can be retrieved from the dictionary vars.servers using the name as the dictionary key"""
 
     conf = vars.servers_conf
 
@@ -103,5 +98,14 @@ def add_conf_entry2(name, host, ftp_user, ftp_password, ssh_user, ssh_password):
     with vars.servers_conf_loc.open('w') as configfile:
         conf.write(configfile)
 
-    #refresh the vars.webfaction dictionary
-    vars.save_servers_conf_entries()
+    #refresh the vars.servers dictionary
+    save_conf_entries()
+
+def save_conf_entries():
+    """Read whatever is currently in the servers.txt file and saves the result in the vars.servers dictionary"""
+    servers = {}
+    for section in vars.servers_conf.sections():
+        servers[section] = {}
+        for (key, val) in vars.servers_conf.items(section):
+            servers[section][key] = val
+    vars.servers = servers

@@ -12,7 +12,7 @@ def setup(server):
     ftp_credentials.setup_remote_sync(server)
 
     script = vars.script_dir / 'wordpress_utils' /'gulp_creater.py'
-    subprocess.call("python %s %s %s" % (script, vars.webfaction_theme_dir, vars.project_dir / 'gulpfile.js'), shell=True)
+    subprocess.call("python %s %s %s" % (script, vars.servers_theme_dir, vars.project_dir / 'gulpfile.js'), shell=True)
     os.chdir(str(vars.project_dir))
     npm_packages = vars.project_dir / "packages.json"
     if npm_packages.exists():

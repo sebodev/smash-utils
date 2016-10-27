@@ -22,6 +22,4 @@ You will want to take a look at what's in the runner/vars.py module. There are s
 the locations of folders where smash-utils stores data
 and various pieces of info that have been stored in config files.
 Also the lib/webfaction.py module is pretty handy for interacting with Webfaction.
-FTP and SSH passwords are in the vars.servers variable.
 You can also use the lib/passwords module to find various types of passwords.
-The passwords module is lacking, so you may also want to use lib/lastpass and wordpress_utils.db_passwords modules.

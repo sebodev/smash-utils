@@ -9,23 +9,23 @@ from . import servers
 #this will be a dictionary containing extra info about the last account connected to with the connect() function
 current_account = None
 xmlrpc_cache = {}
-current_account_cache = {}
+account_cache = {}
 
 def connect(server):
     global current_account, xmlrpc_cache
     if server in xmlrpc_cache:
-        current_account = current_account_cache[server]
+        current_account = account_cache[server]
         return xmlrpc_cache[server]
 
     webfaction = xmlrpc.client.ServerProxy("https://api.webfaction.com/")
-    ftp_username = vars.webfaction[server]["ssh-username"]
-    ftp_password = vars.webfaction[server]["ssh-password"]
+    ftp_username = vars.servers[server]["ssh-username"]
+    ftp_password = vars.servers[server]["ssh-password"]
     if vars.verbose:
         print("logging into webfaction with the credentials {} and {}".format(ftp_username, ftp_password))
     wf_id, current_account = webfaction.login(ftp_username, ftp_password)
 
     xmlrpc_cache[server] = webfaction, wf_id
-    current_account_cache[server] = current_account
+    account_cache[server] = current_account
     return webfaction, wf_id
 
 def xmlrpc_connect(server):
@@ -36,7 +36,9 @@ def get_webapps(server):
     apps = wf.list_apps(wf_id)
     return [app["name"] for app in apps]
 
-
+def get_user(server):
+    """grabs the name of the webfaction user"""
+    return account_cache[server]["username"]
 
 
 #these have been moved to the servers module

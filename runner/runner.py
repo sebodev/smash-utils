@@ -32,6 +32,48 @@ elif "--lockouts" in sys.argv:
 
     security_info.main(server, app_name)
 
+elif "--backup" in sys.argv or "--back" in sys.argv:
+    from maintenance_utils import migrate
+
+    try:
+        server = args.backup[0]
+    except IndexError:
+        server = None
+    try:
+        dir_on_server = args.backup[1]
+    except IndexError:
+        dir_on_server = None
+    try:
+        local_dir = args.backup[2]
+    except IndexError:
+        local_dir = None
+
+    migrate.backup(server, dir_on_server, local_dir)
+
+elif "--restore" in sys.argv:
+    from maintenance_utils import migrate
+
+    print("Hold on buddy. We'll save you")
+
+    try:
+        server = args.restore[0]
+    except IndexError:
+        server = None
+    try:
+        server_dir = args.restore[1]
+    except IndexError:
+        server_dir = None
+    try:
+        sqlDump = args.restore[2]
+    except IndexError:
+        sqlDump = None
+    try:
+        backupFile = args.restore[3]
+    except IndexError:
+        backupFile = None
+
+    migrate.restore(server, server_dir, sqlDump, backupFile)
+
 elif "--migrate" in sys.argv:
     from maintenance_utils import migrate
 
@@ -40,7 +82,7 @@ elif "--migrate" in sys.argv:
     except IndexError:
         serverTo = None
     try:
-        serverFrom = int(args.migrate[1])
+        serverFrom = args.migrate[1]
     except IndexError:
         serverFrom = None
 
@@ -95,16 +137,16 @@ elif "--chrome" in sys.argv:
 elif "--db" in sys.argv:
     from maintenance_utils import db_passwords
     try:
-        search_term = args.db[0]
+        server = args.db[0]
     except IndexError:
-        search_term = input('Enter a website: ')
+        server = input('Enter a server entry: ')
 
     try:
         app_name = args.db[1]
     except IndexError:
         app_name = input('Enter the Webfaction App Name: ')
 
-    db_passwords.main(search_term, app_name)
+    db_passwords.main(server, app_name)
 
 elif "--update" in sys.argv:
     import subprocess

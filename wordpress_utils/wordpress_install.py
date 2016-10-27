@@ -15,8 +15,8 @@ import urllib.request, urllib.parse, urllib.error, urllib.parse, unittest
 
 from runner import vars
 
-webfaction_user = vars.webfaction["sebodev"]["ssh-username"]
-webfaction_passwd = vars.webfaction["sebodev"]["ssh-password"]
+webfaction_user = vars.servers["sebodev"]["ssh-username"]
+webfaction_passwd = vars.servers["sebodev"]["ssh-password"]
 
 website_name = vars.current_project.replace(' ', '')
 if not re.compile('^[a-zA-Z0-9\.\-]+$').search(website_name) and not website_name.startswith('-') and not website.endswith('-'):
