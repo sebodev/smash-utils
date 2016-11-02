@@ -22,7 +22,11 @@ def _prompt_for_credentials():
     elif vars.new_credentials:
         save_username(lastpass_username)
 
-    lastpass_password = retrieve_password()
+    try:
+        lastpass_password = retrieve_password()
+    except lib.errors.SmashException:
+        lastpass_password = None
+
     if not lastpass_password or vars.new_credentials:
         lastpass_password = getpass.getpass("what's your lastpass password: ") #getpass behaves like input(), except the user input is not displayed on the screen
         save_password(lastpass_password)
