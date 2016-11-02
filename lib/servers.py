@@ -85,12 +85,17 @@ def add_conf_entry(name, lastpass_ftp_query=None, lastpass_ssh_query=None, lastp
         if (len(res) > 1):
             raise SmashException('found multiple possible entries in lastpass for "{}" with "{}" in the title. You\'ll need to Pass in the exact lastpass ftp and ssh names to this function.'.format(name, "ssh"))
 
-    is_webfaction=True
+    is_webfaction = True
     if lastpass_webfaction_query:
         webfaction_cred = passwords.lastpass(lastpass_webfaction_query, exact_match=True)[0]
     elif webfaction_is_ssh:
         webfaction_cred = ssh_cred
-        is_webfaction=webfaction.can_login(ssh_cred.username, ssh_cred.password)
+        try:
+            webfaction = xmlrpc.client.ServerProxy("https://api.webfaction.com/")
+            wf_id, current_account = webfaction.login(ssh_cred.username, ssh_cred.password)
+        except xmlrpc.client.Fault as err:
+            if str(err) == "<Fault 1: 'LoginError'>":
+                is_webfaction = False
     else:
         res = passwords.lastpass(name, "webfaction")
         webfaction_cred = res[0]
