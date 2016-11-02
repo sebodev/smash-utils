@@ -8,6 +8,7 @@ from maintenance_utils import db_passwords
 tmp_dir = vars.storage_dir / "tmp"
 
 def get_lockout_data(ssh_user, host, db_user, db_password, database):
+    """ returns the ithemes database table as xml """
     output_file = tmp_dir / (database + "_MySqlDump.xml")
     cmd = 'ssh {}@{} "mysqldump -u {} -p{} {} wp_itsec_log --xml | gzip -c" | gzip -d > {}'.format(ssh_user, host, db_user, db_password, database, output_file)
     print(cmd)
@@ -22,9 +23,10 @@ def get_lockout_data(ssh_user, host, db_user, db_password, database):
     data = root.find(".//database/table_data")
     return data
 
-def numberOfLockouts(ssh_user, host, db_user, db_password, database):
+def number_of_lockouts(ssh_user, host, db_user, db_password, database):
+    """ returns the dictionary {lockouts:int, brute_force_attempts:int} """
     data = get_lockout_data(ssh_user, host, db_user, db_password, database)
-    print('data', data)
+
     user_logging  = data.xpath("row/field[@name='log_type'][text()='user_logging']/..")
     lockouts      = data.xpath("row/field[@name='log_type'][text()='lockout']/..")
     brute_force   = data.xpath("row/field[@name='log_type'][text()='brute_force']/..")
@@ -72,10 +74,23 @@ def search_lastpass_and_get_lockouts(app_name, ftp_search_term, ssh_search_term=
     # db_user = "cdcutah"
     # db_password = "4LfOUmUN3nw3"
     # database = "cdcutah"
-    print( numberOfLockouts(ssh_user, host, db_user, db_password, database) )
+    print( number_of_lockouts(ssh_user, host, db_user, db_password, database) )
 
 
 
 def main(server, app_name):
+
+    if not app_name:
+        from lib import webfaction
+        webapps = webfaction.get_webapps(server)
+        app_name = input("Enter a Webfaction app name for {}: ".format(server))
+        while (app_name not in webapps):
+            print()
+            print("AVAILABLE APPS: ")
+            print(webapps)
+            print()
+            print("I'd love to look that up for you, but {} isn't an app on the server {}.".format(app_name, server))
+            app_name = input("I suppose I'll give you another chance. What app would you like to use: ")
+
     database, db_host, db_user, db_password =  db_passwords.find(server, app_name)
-    print( numberOfLockouts(servers.get(server, "ssh-username"), servers.get(server, "host"), db_user, db_password, database) )
+    print( number_of_lockouts(servers.get(server, "ssh-username"), servers.get(server, "host"), db_user, db_password, database) )

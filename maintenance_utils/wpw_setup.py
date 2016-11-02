@@ -1,5 +1,6 @@
 import shutil, os, re
 from runner import vars
+from lib import servers
 
 # wpw_name contains the client name passed in from the command line
 # wpw_level is a 1, 2, or 3 for the different wordpress warranty packages -- wpw, care, and care and feeding
@@ -69,7 +70,7 @@ def create_contact_info_file():
                         poc_phone
                         )
         if notes:
-            contact_info_contents += "notes: {}\n".format(notes)
+            contact_info_contents += "\n        notes: {}\n".format(notes)
 
     adding = "yes"
     while(adding.lower().startswith("y")):
@@ -81,18 +82,13 @@ def create_contact_info_file():
 def create_update_info_file():
     update_info_file = client_dir / "Update Info.txt"
 
-    try:
-        os.remove(str(contact_info_file))
-    except FileNotFoundError:
-        pass
-
     update_core_uri_component = "/wp-login.php?redirect_to=%2Fwp-admin%2Fupdate-core.php&reauth=1"
     contents = ""
-    the_input = input("Enter the URL of the staging site, or leave blank for staging.{}".format(client_website)
+    the_input = input("Enter the URL of the staging site, or leave blank for staging.{}: ".format(client_website))
     if not the_input:
         the_input = "staging."+client_website
     contents += "staging=" + the_input + update_core_uri_component
-    contents += "form=" + input("enter the URL for the updates form. To find this open up {}, click the send button, and then click on the tab with the link icon".format(client_dir)))
+    contents += "form=" + input("enter the URL for the updates form. To find this open up {}, click the send button, and then click on the tab with the link icon: ".format(client_dir))
     contents += "website=" + client_website + update_core_uri_component
 
 def save_dns_info():

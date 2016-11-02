@@ -1,3 +1,5 @@
+""" this module is for getting info about the projects inside of vars.projects_root_dir """
+
 from runner import vars
 
 def get_project_from_dir(the_dir):

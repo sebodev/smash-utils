@@ -27,7 +27,7 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
     if end > 0:
         app_name = app_name[:end]
     else:
-        wf, wf_id = webfaction.xmlrpc_connect(server)
+        wf, wf_id = webfaction.connect(server)
         user = wf.system(wf_id, 'echo "$USER"')
         site_guess = site + ".{}.com".format(user)
 
@@ -36,7 +36,7 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
         else:
             site = input("What is the WordPress site you would like to create: ")
 
-    wf, wf_id = webfaction.xmlrpc_connect(server)
+    wf, wf_id = webfaction.connect(server)
 
     #Note from Webfaction: MySQL database names are limited to 16 characters. Therefore, the WordPress application name
     #must be less than 15 characters minus your username.

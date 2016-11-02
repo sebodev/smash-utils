@@ -21,8 +21,8 @@ import lib.webfaction
 import sys
 
 def setup_servers_conf():
-    lib.webfaction.add_conf_entry("sebodev", "Sebodev FTP", "Sebodev SSH")
-    lib.webfaction.add_conf_entry("wpwarranty", ssh_is_ftp=True)
+    lib.servers.add_conf_entry("sebodev", "Sebodev FTP", "Sebodev SSH", "Sebodev Webfaction Account")
+    lib.servers.add_conf_entry("wpwarranty", ssh_is_ftp=True)
 
 def save_personal_info():
     name_guess = getpass.getuser()
@@ -54,12 +54,12 @@ def save_locations():
     project_dir = None
     while not project_dir:
         project_dir = input("Type in the name of the folder you would like us to download wordpress themes into so you can work  your mad developer skills on them: ")
-    google_drive_dir = input("Where is your Google Drive folder. Leave blank if Google Drive was never installed on the computer, but some things won't work: ")
+    google_drive_dir = input("Where is your Google Drive folder. If Google Drive hasn't been installed, you'll want to install it: ")
 
-    if not sebo_conf.has_section('locations'):
-        sebo_conf.add_section('locations')
-    if not sebo_conf.has_section('setup_info'):
-        sebo_conf.add_section('setup_info')
+    if not vars.sebo_conf.has_section('locations'):
+        vars.sebo_conf.add_section('locations')
+    if not vars.sebo_conf.has_section('setup_info'):
+        vars.sebo_conf.add_section('setup_info')
 
     vars.sebo_conf.set("locations", "project_dir", project_dir)
     if google_drive_dir:
@@ -71,9 +71,13 @@ def save_locations():
 
     vars.sebo_conf.set("locations", "stored_data", vars.storage_dir)
     vars.sebo_conf.set("setup_info", "setup_ran", "True")
+
     try:
-        version = subprocess.check_output("git rev-parse --verify HEAD", shell=True)
-        vars.sebo_conf.set("setup_info", "version_first_installed", version)
+        if os.name == "nt":
+            version = subprocess.check_output("cd /d {} && cd {} && git rev-parse --verify HEAD".format(vars.script_dir.drive, vars.script_dir), shell=True)
+        else:
+            version = subprocess.check_output("cd {} && git rev-parse --verify HEAD".format(vars.script_dir.drive, vars.script_dir), shell=True)
+        vars.sebo_conf.set("setup_info", "version_setup_run", version.decode("utf-8"))
     except:
         pass
 

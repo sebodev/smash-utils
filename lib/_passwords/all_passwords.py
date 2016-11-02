@@ -1,4 +1,4 @@
-from lib.passwords import _common
+from lib.passwords import common
 from lib.passwords import chrome
 from lib.passwords import db
 from lib.passwords import filezilla
@@ -13,33 +13,33 @@ def find(search_term, server=None):
     if search_term:
         try:
             ret.append(chrome.find(search_term))
-        except _common.CredentialsNotFound:
+        except common.CredentialsNotFound:
             pass
 
         try:
             ret.append(filezilla.find(search_term))
-        except _common.CredentialsNotFound:
+        except common.CredentialsNotFound:
             pass
 
         try:
             ret.append(lastpass.find(search_term))
-        except _common.CredentialsNotFound:
+        except common.CredentialsNotFound:
             pass
 
     if server:
         try:
             ret.append(ftp.find(server))
-        except _common.CredentialsNotFound:
+        except common.CredentialsNotFound:
             pass
 
         try:
             ret.append(ssh.find(server))
-        except _common.CredentialsNotFound:
+        except common.CredentialsNotFound:
             pass
 
         try:
             ret.append(db.find(server))
-        except _common.CredentialsNotFound:
+        except common.CredentialsNotFound:
             pass
 
     return ret

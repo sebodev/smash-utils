@@ -8,6 +8,34 @@ if "--setup" in sys.argv:
     from runner import setup
     setup.main()
 
+elif "--server" in sys.argv:
+    from maintenance_utils import server_info
+    server_info.main(args.server)
+
+elif "--ftp" in sys.argv:
+    from maintenance_utils import ftp_info
+    ftp_info.main(args.ftp)
+
+elif "--ssh" in sys.argv:
+    import subprocess
+    import lib.servers
+    server = lib.servers.get(args.ssh)
+    subprocess.run("ssh {}@{}".format(server["ssh-username"], server["host"]))
+
+elif "--monthly" in sys.argv:
+    from maintenance_utils import monthly
+
+    try:
+        domain = args.monthly[0]
+    except IndexError:
+        domain = None
+    try:
+        server = args.monthly[1]
+    except IndexError:
+        server = None
+
+    monthly.main(domain, server)
+
 elif "--lockouts" in sys.argv:
     from maintenance_utils import security_info
 
@@ -19,16 +47,7 @@ elif "--lockouts" in sys.argv:
     try:
         app_name = args.lockouts[1]
     except IndexError:
-        from lib import webfaction
-        webapps = webfaction.get_webapps(server)
-        app_name = input("Enter a Webfaction app name for {}: ".format(server))
-        while (app_name not in webapps):
-            print()
-            print("AVAILABLE APPS: ")
-            print(webapps)
-            print()
-            print("I'd love to look that up for you, but {} isn't an app on the server {}.".format(app_name, server))
-            app_name = input("I suppose I'll give you another chance. What app would you like to use: ")
+        app_name = None
 
     security_info.main(server, app_name)
 
@@ -214,10 +233,18 @@ elif ("--wp" in sys.argv or "--wordpress" in sys.argv):
         if not server:
             server = "sebodev"
 
+    app_type = None
+    try:
+        app_type = args.wordpress[2]
+    except IndexError:
+        pass
+    if app_type == "static":
+        app_type = "static_php70"
+
     #from wordpress_utils import wordpress_install
 
     from wordpress_utils import wordpress_install2
-    wordpress_install2.create(site, server)
+    wordpress_install2.create(site, server, app_type)
 
 elif ("-_" in sys.argv or "_s-project" in sys.argv):
     while not args._s_project:

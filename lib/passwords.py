@@ -9,9 +9,9 @@ def chrome(search_term, search_term2=None):
     from lib._passwords import chrome as chrome_
     return chrome_.find(search_term, search_term2)
 
-def db(server_entry, root_folder):
+def db(server_entry, wp_folder):
     from lib._passwords import db as db_
-    return db_.find(server_entry, root_folder)
+    return db_.find(server_entry, wp_folder)
 
 def filezilla(search_term):
     from lib._passwords import filezilla as filezilla_

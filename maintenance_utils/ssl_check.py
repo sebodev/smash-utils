@@ -5,6 +5,10 @@ import ssl
 import datetime
 import lib.webfaction
 from runner import vars
+from lib.errors import SmashException
+
+class AlreadyExpired(SmashException):
+    pass
 
 def main(domain_or_server=None):
     """ checks when a domain expires.
@@ -21,12 +25,14 @@ def main(domain_or_server=None):
         main(d_or_s)
 
 def check_domain(domain):
+    days_left = ssl_valid_time_remaining(domain).days
     if not ssl_expires_soon(domain,  suppressErrors=False):
-        print("{} is in good shape. It's SSL certificate doesn't expire for {} days.".format(domain, ssl_valid_time_remaining(domain).days))
+        print("{} is in good shape. It's SSL certificate doesn't expire for {} days.".format(domain, days_left))
+    return days_left
 
 def check_server(server):
     no_problems = True
-    wf, wf_id = lib.webfaction.xmlrpc_connect(server)
+    wf, wf_id = lib.webfaction.connect(server)
 
     for data in wf.list_domains(wf_id):
         if ssl_expires_soon(data["domain"]):
@@ -38,12 +44,12 @@ def check_server(server):
         print("\nYou're looking good. All of your SSL certificates are up to date.")
 
 def ssl_expires_soon(domain, suppressErrors=True):
-    """ Returns True and prints out a warning if a website's SSL certificate expires within 50 days. """
+    """ Returns days_left and prints out a warning if a website's SSL certificate expires within 50 days. """
     try:
         days_left = ssl_expires_in(domain, 50)
         if days_left is not None:
             print("Better watch out. {} expires in {} days".format(domain, days_left))
-            return True
+            return days_left
         return False
     except ssl.CertificateError:
         if not suppressErrors or vars.verbose:
@@ -87,9 +93,12 @@ def ssl_expiry_datetime(hostname):
         server_hostname=hostname,
     )
     # 3 second timeout because Lambda has runtime limitations
-    conn.settimeout(3.0)
-
-    conn.connect((hostname, 443))
+    conn.settimeout(4.0)
+    try:
+        conn.connect((hostname, 443))
+    except socket.timeout:
+        print("\n!! Timed out trying to connect to {}\n".format(hostname))
+        raise
     ssl_info = conn.getpeercert()
     # parse the string from the certificate into a Python datetime object
     return datetime.datetime.strptime(ssl_info['notAfter'], ssl_date_fmt)

@@ -48,32 +48,11 @@ def get_all_accounts():
         vault = lib._lastpass.Vault.open_remote(lastpass_username, lastpass_password)
         save_password(lastpass_password)
     except lib._lastpass.exceptions.NetworkError:
-        raise SmashException("Well shoot. Network error. LastPass must have locked us out again :( You'll have to wait a few minutes and try again.")
+        raise SmashException("Well shoot. A network error. LastPass must have locked us out again :( You'll have to wait a few minutes and try again.")
     return vault.accounts
 
 def find(search_term, search_term2=None):
     return passwords.lastpass(search_term, search_term2)
-
-    # """A generator that finds lastpass passwords by username, url, or name.
-    # Optionally narrow down the search by searching through the lastpass names of the results returned with search_term2"""
-    #
-    # search_term = str(search_term).lower()
-    # for password_obj in get_all_accounts():
-    #     for term in search_term.split():
-    #         if (
-    #                 term in str(password_obj.name).lower()
-    #                 or term in str(password_obj.url).lower()
-    #                 or term in str(password_obj.username).lower()
-    #             ):
-    #             if search_term2:
-    #                 if search_term2.lower() in str(password_obj.name).lower():
-    #                     yield password_obj
-    #                     break
-    #             else:
-    #                 yield password_obj
-    #                 break
-    #
-    #     #there is also password_obj.id and password_obj.group
 
 def save_username(username):
     global lastpass_username

@@ -51,7 +51,7 @@ def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
                         print( "Failed to cd to '{}'. Above is a list of the current directory contents \n{}".format(wp_config_folder,ftp.dir()) )
                     except:
                         pass
-                wf, wf_id = lib.webfaction.xmlrpc_connect(wp_config_folder) #Todo need to be able to map the host to the webfaction conf entry
+                wf, wf_id = lib.webfaction.connect(wp_config_folder) #Todo need to be able to map the host to the webfaction conf entry
                 apps = wf.list_apps(wf_id)
                 apps = [app["name"] for app in apps]
                 new_err_msg = "Did not find the webfaction app {}. Possible webfaction apps are: {}".format(wp_config_folder, apps)

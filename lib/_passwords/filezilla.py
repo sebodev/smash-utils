@@ -1,7 +1,7 @@
 import os, os.path, base64
 import lxml.etree
 from runner import vars
-from lib._passwords import _common
+from lib._passwords import common
 import lib.errors
 
 def find(search_term):
@@ -27,7 +27,7 @@ def find(search_term):
 
         passwd = base64.b64decode(passwd).decode("utf-8")
 
-        ret.append(name, host, user, passwd)
+        ret.append(common.credential(name, host, user, passwd))
 
     if not ret:
         raise lib.errors.CredentialsNotFound("There aren't any sites saved in filezilla's site manager that includes the search term {}".format(search_term))

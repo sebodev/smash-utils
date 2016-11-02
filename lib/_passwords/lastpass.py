@@ -1,6 +1,6 @@
 from lib import lastpass
-from lib._passwords import _common
-from lib import errors
+from lib._passwords import common
+import lib.errors
 
 def find(search_term, search_term2=None, exact_match=False):
     """A generator that finds lastpass passwords by username, url, or name.
@@ -9,9 +9,9 @@ def find(search_term, search_term2=None, exact_match=False):
 
     ret = []
     if exact_match:
-        for i in get_all_accounts():
+        for i in lastpass.get_all_accounts():
             if str(search_term) == i.name.decode().strip():
-                ret.append(_common.credential(i.name.decode('utf-8'), i.url.decode('utf-8'), i.username.decode('utf-8'), i.password.decode('utf-8')))
+                ret.append(create_cred_obj(i))
 
     search_term = str(search_term).lower()
     for password_obj in lastpass.get_all_accounts():
@@ -23,13 +23,35 @@ def find(search_term, search_term2=None, exact_match=False):
                 ):
                 if search_term2:
                     if search_term2.lower() in str(password_obj.name).lower():
-                        ret.append(_common.credential(password_obj.name.decode('utf-8'), password_obj.url.decode('utf-8'), password_obj.username.decode('utf-8'), password_obj.password.decode('utf-8')))
+                        ret.append(create_cred_obj(password_obj))
                         break
                 else:
-                    ret.append(_common.credential(password_obj.name.decode('utf-8'), password_obj.url.decode('utf-8'), password_obj.username.decode('utf-8'), password_obj.password.decode('utf-8')))
+                    ret.append(create_cred_obj(password_obj))
                     break
 
     if not ret:
         raise lib.errors.CredentialsNotFound("Couldn't find any matching lastpass credentials")
 
     return ret
+
+def create_cred_obj(password_obj):
+    """ changes a lastpass account object into the common.credentials object """
+    po = password_obj
+
+    name = po.name
+    if name:
+        name = name.decode("utf-8")
+
+    url = po.url
+    if url:
+        url = url.decode("utf-8")
+
+    username = po.username
+    if username:
+        username = username.decode("utf-8")
+
+    password = po.password
+    if password:
+        password = password.decode("utf-8")
+
+    return common.credential(name, url, username, password)

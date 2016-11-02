@@ -4,7 +4,7 @@ import lib.lastpass
 import lib.passwords
 from lib.errors import SmashException
 import lib.webfaction
-from lib._passwords import _common
+from lib._passwords import common
 import lib.errors
 
 def find_with_ftp_search(domain, wp_config_folder):
@@ -80,7 +80,7 @@ def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
         if not (name or user or password or host):
             raise lib.errors.CredentialsNotFound("Sorry sir, I've failed you. I couldn't find any database info in the config file.")
 
-        return _common.credential(name, host, user, password)
+        return common.credential(name, host, user, password)
 
 def get_define_value(data, define_variable):
     ret = data[data.find(define_variable) : ]

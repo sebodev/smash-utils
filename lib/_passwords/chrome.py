@@ -4,7 +4,7 @@ from pathlib import Path
 from runner import vars
 import lib.errors
 from lib.errors import SmashException
-from lib._passwords import _common
+from lib._passwords import common
 
 if os.name == 'nt':
     try:
@@ -52,16 +52,16 @@ def find(search_term, search_term2=None):
                 password = win32crypt.CryptUnprotectData(passwd, None, None, None, 0)[1].decode()
                 if search_term2:
                     if search_term2 in url or search_term2 in user:
-                        ret.append(_common.credential("chrome password", url, user, password))
+                        ret.append(common.credential("chrome password", url, user, password))
                 else:
-                    ret.append(_common.credential("chrome password", url, user, password))
+                    ret.append(common.credential("chrome password", url, user, password))
     else:
         for url, user, passwd in query_results:
             if search_term2:
                 if search_term2 in url or search_term2 in user:
-                    ret.append(_common.credential("chrome password", url, user, password))
+                    ret.append(common.credential("chrome password", url, user, password))
             else:
-                ret.append(_common.credential("chrome password", url, user, password))
+                ret.append(common.credential("chrome password", url, user, password))
     if not ret:
         search_terms = search_term+" and "+search_term2 if search_term2 else search_term
         raise lib.errors.CredentialsNotFound("I've been searching long and hard, but my efforts to find a chrome password with the search term {} have failed".format(search_terms))

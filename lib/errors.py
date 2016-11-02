@@ -11,3 +11,6 @@ class SmashException(Exception):
 class CredentialsNotFound(SmashException):
     """used by the lib.passwords module when searching for a password and it cannot be found"""
     pass
+
+class LoginError(SmashException):
+    pass
