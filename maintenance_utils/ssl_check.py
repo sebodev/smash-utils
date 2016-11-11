@@ -21,8 +21,17 @@ def main(domain_or_server=None):
     elif d_or_s:
         check_domain(d_or_s)
     else:
-        d_or_s = input("Enter a domain or a Webfaction server entry to check: ")
-        main(d_or_s)
+        d_or_s = input("Enter a domain or a Webfaction server entry to check. Leave blank to check them all: ")
+        if not d_or_s:
+            res = []
+            for server in vars.servers:
+                print("\nChecking " + server)
+                res.append( check_server(server, print_results=False) )
+            if all(res):
+                print("Everything is in tip top shape.")
+
+        else:
+            main(d_or_s)
 
 def check_domain(domain):
     days_left = ssl_valid_time_remaining(domain).days
@@ -30,18 +39,19 @@ def check_domain(domain):
         print("{} is in good shape. It's SSL certificate doesn't expire for {} days.".format(domain, days_left))
     return days_left
 
-def check_server(server):
+def check_server(server, print_results=True):
     no_problems = True
     wf, wf_id = lib.webfaction.connect(server)
 
     for data in wf.list_domains(wf_id):
         if ssl_expires_soon(data["domain"]):
-            print("x", end="")
+            print("!", end="")
             no_problems = False
         else:
             print(".", end="", flush=True)
-    if no_problems:
+    if no_problems and print_results:
         print("\nYou're looking good. All of your SSL certificates are up to date.")
+    return no_problems
 
 def ssl_expires_soon(domain, suppressErrors=True):
     """ Returns days_left and prints out a warning if a website's SSL certificate expires within 50 days. """

@@ -15,9 +15,7 @@ def encrypt(password):
         try:
             import win32crypt
         except:
-            if vars.verbose:
-                print("If you don't want to have to type in the password each time, you can install the python extension from https://sourceforge.net/projects/pywin32/files/pywin32/Build%20220/ so I can more securely save the password on the computer")
-            raise SmashException("Python Extensions not installed")
+            raise SmashException("Python Extensions not installed. Install from https://sourceforge.net/projects/pywin32/files/pywin32/Build%20220/ \nCheck if Python is running in 32bit or 64bit mode and the Python version being run, and then install the appropriate python extension")
 
         drive_dir = vars.google_drive_smash_utils_dir
         key_file = drive_dir / "lastpass-key-part1"

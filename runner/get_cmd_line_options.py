@@ -1,36 +1,20 @@
-''' parses the command line options, and stores the result in the args object.
-for the wordpress commands the project name will be stored under vars.current_project '''
+''' parses the command line options, and stores the result in the args object. '''
 
 import sys, argparse
+import runner.help_formatter
 
 usage_help_str = '''smash command [options]
 Run smash --setup to install this script
 '''
 
-#we use a custom help formatter to avoid duplication of the metavars when displaying the help
-class CustomHelpFormatter(argparse.HelpFormatter):
-    def _format_action_invocation(self, action):
-        if not action.option_strings or action.nargs == 0:
-            return super()._format_action_invocation(action)
-        default = self._get_default_metavar_for_optional(action)
-        args_string = self._format_args(action, default)
-        if action.nargs == "*" and action.metavar:
-            if isinstance(action.metavar, str):
-                args_string = "[{}]".format(action.metavar)
-            else:
-                args_string = " ".join(action.metavar)
-        comma_append = "," if len(action.option_strings)>1 else ""
-        return ', '.join(action.option_strings) + ' ' + args_string
+epilog_str = "More info can be found at http://sitesmash.com/docs/docs/maintenance/other/smash-utils/"
+if len(sys.argv)>=2:
+    epilog_str = None
 
-fmt = lambda prog: CustomHelpFormatter(prog)
+def formatter(prog):
+    return runner.help_formatter.Formatter(prog)
 
-parser = argparse.ArgumentParser(formatter_class=fmt, epilog="More info can be found at http://sitesmash.com/docs/docs/maintenance/other/smash-utils/", usage=usage_help_str, add_help=False)
-
-maintenance = parser.add_argument_group('Maintenance and general purpose')
-wordpress = parser.add_argument_group('Wordpress projects')
-servers = parser.add_argument_group('Manage servers')
-passwords = parser.add_argument_group('Find a password')
-other = parser.add_argument_group('Other options')
+parser = argparse.ArgumentParser(formatter_class=formatter, epilog=epilog_str, usage=usage_help_str, add_help=False)
 
 ### nargs info ###
 # nargs=? # nargs can be 0 or 1 items. It is saved as a string or None (unless a differen default has been specified)
@@ -45,34 +29,42 @@ other = parser.add_argument_group('Other options')
 # metavar is the name to display on the help screen for the items nargs accepts. Use a tuple if there are multiple items
 #
 
+wordpress = parser.add_argument_group('Wordpress projects')
+servers = parser.add_argument_group('Manage servers')
+maintenance = parser.add_argument_group('Maintenance and general purpose')
+passwords = parser.add_argument_group('Find a password')
+other = parser.add_argument_group('Other options')
+
 wordpress.add_argument("-_", "--_s-project", default="", help="Create a new _s project")
-wordpress.add_argument("--download", "--down", nargs="*", metavar="app-name server theme", default="", help="Downloads a theme. Also attempts to run npm install and to make the theme work with the atom editor's remote-sync plugin")
+wordpress.add_argument("--download", "--down", nargs="*", metavar=("website", "theme-or-plugin"), default="", help="Downloads a theme. Also attempts to run npm install and to make the theme work with the atom editor's remote-sync plugin")
 wordpress.add_argument("-n", "--new", help="Runs through an interactive session to help you get things setup.", action="store_true")
-wordpress.add_argument("-w", "--watch", metavar="project", default="", help="runs the gulp command. If you are in any folder within a gulp it still works, and if you are not within a gulp project folder it will prompt you for one")
-wordpress.add_argument("--wordpress", "--wp", nargs="*", metavar=("site-name", "server"), default="", help="sets up a new wordpress site")
+wordpress.add_argument("-w", "--watch", nargs="*", metavar=("project", "theme"), default="", help="runs the gulp command. If you are in any folder within a gulp it still works, and if you are not within a gulp project folder it will prompt you for one. Project will be an app name")
+wordpress.add_argument("--wordpress", "--wp", nargs="*", metavar=("website", "app-type"), default="", help="sets up a new wordpress site")
+
+servers.add_argument("--backup", nargs="+", metavar=["server-entry", "server-directory", "local_directory"], help="Performs a files and database backup. server-directory can also be a webfaction app-name.")
+servers.add_argument("--db-backup", nargs="*", metavar=["server-entry", "local_directory"], help="Performs a files and database backup. server-directory can also be a webfaction app-name.")
+servers.add_argument("--migrate", nargs="*", default="", metavar="", help="copies a website from one server to another. Does not work yet.")
+servers.add_argument("--restore", nargs="*", default="", metavar=["server-entry", "server-directory", "sql-dump", "backup.tar.gz"], help="restores a backup. server-directory can also be a webfaction app. A website wil be created for the app if the app does not exist.")
+servers.add_argument("--server", "--servers", nargs="?", default=None, metavar="domain-or-server", help="Displays info for a server entry of for the corresponding server entry for a domain or displays all server entries if nothing is passed in")
 
 maintenance.add_argument("--dns", nargs="*", default="", const=None, metavar=("domain.com", "output.txt"), help="Does a DNS lookup and optionally saves the results to a text file")
-maintenance.add_argument("--lockouts", nargs="+", metavar=("app-name, ftp-search-term", "ssh-search-term"), help="Checks the number of ithemes security lockouts logged in a database")
+maintenance.add_argument("--hosts", action="store_true", help="Opens the hosts file in notepad or vi")
+maintenance.add_argument("--lockouts", metavar="website", help="Checks the number of ithemes security lockouts logged in a database")
 maintenance.add_argument("--md5", nargs="?", default="", metavar="password", help="takes a password and outputs the md5 hash")
-maintenance.add_argument("--monthly", nargs="*", default="", metavar=("domain", "server"), help="Performs part of the initial setup for a new WordPress Warranty client.")
+maintenance.add_argument("--monthly", nargs="*", default="", metavar=("website"), help="Performs part of the initial setup for a new WordPress Warranty client.")
 maintenance.add_argument("--performance", nargs="+", metavar=("domain", "output file"), help="Runs a webpagetest.org performance test. Pass in a location to store the CSV results")
-maintenance.add_argument("--ssh", metavar="server", help="ssh into a server")
+maintenance.add_argument("--ssh", metavar="website", help="ssh into a website or server")
 maintenance.add_argument("--ssl", nargs="?", metavar="domain", help="Checks if either a domain's ssl certificate is expiring soon, or if a webfaction server entry is passed in, checks all of the domains on that server")
 maintenance.add_argument("--wpw", nargs="*", default=[], metavar=("client name", "level of warranty (1, 2, or 3)"), help="Performs part of the initial setup for a new WordPress Warranty client.")
 
-servers.add_argument("--backup", "--back", nargs="*", metavar=["server-entry", "server-directory", "local_directory"], help="Performs a files and database backup. server-directory can also be a webfaction app-name.")
-servers.add_argument("--migrate", nargs="*", default="", help="copies a website from one server to another. Does not work yet.")
-servers.add_argument("--restore", nargs="*", default="", metavar=["server-entry", "server-directory", "sql-dump", "backup.tar.gz"], help="restores a backup. server-directory can also be a webfaction app. A website wil be created for the app if the app does not exist.")
-servers.add_argument("--server", nargs="?", default=None, metavar="domain", help="Displays info for a server entry of for the corresponding server entry for a domain or displays all server entries if nothing is passed in")
-
 passwords.add_argument("--chrome", nargs="?", default="", metavar="search-term", help="Searches Google Chrome for passwords")
-passwords.add_argument("--db", nargs="*", default="", metavar=("server", "app-name"), help="Grabs database credentials from the site's wp-config.php file")
+passwords.add_argument("--db", nargs="*", default="", metavar="website", help="Grabs database credentials from the site's wp-config.php file")
 passwords.add_argument("--filezilla", "--fz", nargs="?", default="", metavar="entry", help="Filezilla's interface hides passwords, but if you provide the name from Filezilla's site manager, I'll tell you the password")
 passwords.add_argument("--ftp", metavar="search-term", help="search the server entries, filezilla, chrome, and lastpass for matching ftp credentials")
 passwords.add_argument("--lastpass", "--lp", nargs="?", default="", metavar="search-term", help="Searches Lastpass for passwords")
 passwords.add_argument("--passwords", "--pass", nargs="?", default="", metavar="search-term", help="Searches Lastpass, Filezilla, and Chrome for passwords")
 
-other.add_argument("-h", "--help", action="help", help="")
+other.add_argument("-h", "--help", action="help", help="pass in an action to --help to get help on it")
 other.add_argument("--new-credentials", help="whenever this script uses credentials, do not reuse saved credentials. You will be prompted for new credentials and the old one will be overwritten.", action="store_true")
 other.add_argument("--setup", "--install", action="store_true", help="Runs through the initial setup of this script")
 other.add_argument("--update", help="updates this script", action="store_true")

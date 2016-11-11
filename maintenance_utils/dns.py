@@ -5,6 +5,9 @@ from runner import vars
 from pathlib import Path
 
 def main(domain, output_file=None):
+    while not domain:
+        domain = args.dns = input('Enter a domain (example google.com): ')
+
     if output_file:
         output_file = Path(output_file)
     domain = domain.replace("http://", "").replace("https://", "")
@@ -13,6 +16,9 @@ def main(domain, output_file=None):
     if "." not in domain:
         user = os.getenv('username') if os.getenv('username') else "user"
         raise Exception("Hey %s. Could you quickly add a .com or a .whatever to the end of that domain. Thanks" % user)
+
+    cmd = 'nslookup -type=any %s'  % domain
+    output_file_res = subprocess.check_output(cmd).decode("utf-8")
 
     # decide where we will store the results
     if output_file:
@@ -25,7 +31,31 @@ def main(domain, output_file=None):
             os.makedirs(str(output_folder))
         except WindowsError:
             pass
+
+        #use a new output_file if the nslookup data has changed since the last time the command was otherwise
         output_file = vars.storage_dir / 'dnsRecords' / (domain + ".txt")
+        if output_file.is_file():
+            i = 0
+            next_output_file = output_file
+            while (next_output_file.is_file()):
+                output_file = next_output_file
+                i += 1
+                next_output_file = vars.storage_dir / 'dnsRecords' / (domain + str(i) + ".txt")
+
+            #ToDo the nslookup is not consisten in which records it displays first, so this check will return false postives
+            #remove all newlines so we don't run into any problems with newlines being retrieved differently then they are saved on the file system
+            file_1_newlines_removed = output_file.read_text().replace("\n", "").replace("\r", "")
+            file_2_newlines_removed = output_file_res.replace("\n", "").replace("\r", "")
+            if ( file_1_newlines_removed == file_2_newlines_removed):
+                if vars.verbose:
+                    print("Did not detect any changes to the dns info stored at {}".format(output_file))
+            else:
+                output_file = next_output_file
+                if vars.verbose:
+                    print("Found changes to the DNS info. Storing results at {}".format(output_file))
+
+
+
 
     whois_dict = lib.whois.lookup(domain)
 
@@ -38,11 +68,9 @@ def main(domain, output_file=None):
         print()
 
     #display nslookup and save to file
-    cmd = 'nslookup -type=any %s'  % domain
-    res = subprocess.check_output(cmd).decode("utf-8")
-    output_file.write_text(res)
+    output_file.write_text(output_file_res)
     if vars.verbose:
-        print(res)
+        print(output_file_res)
         print()
         print("-"*80)
         print()

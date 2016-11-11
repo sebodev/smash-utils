@@ -8,20 +8,20 @@ def prompt_for_task(tasks_to_run):
                         ).lower()[0]
         if ans == 't':
             print('A Chrome window will open shortly')
-            return "wp"
+            return "--wp"
         elif ans == 'c':
             ans = input("Do you need to set up the wordpress site for this custom project. Type yes or no").lower()[0]
             if ans == 'y':
-                return "wp"
+                return "--wp"
             ans = input("Do you need to create the _s theme. This will create it on both the webfaction server, and on your computer. Type no if the theme already exists on webfaction. Type yes or no").lower()[0]
             if ans == 'y':
-                return "_"
+                return "-_"
             else:
                 ans = input("In that case the theme must already exist on webfaction, and we just need to copy it to this computer. Type yes or no").lower()[0]
                 if ans == 'y':
-                    return "download"
+                    return "--download"
                 else:
-                    print("I give up. I have no idea what you want to do. Type sebo --help for a full list of options")
+                    print("I give up. I have no idea what you want to do. Type smash --help for a full list of options")
         else:
             print('Fine, just ignore my instructions of typing t or c. I\'m going to ignore you too')
     except IndexError:

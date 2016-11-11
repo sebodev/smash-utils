@@ -89,6 +89,7 @@ def performance(drive_dir, domain):
     print()
     if vars.verbose:
         print("running performance test...")
-    output_file = drive_dir / "performance_test.csv"
-    performance_test.run(domain, save_file_loc=output_file)
-    return output_file
+    pagespeed_output_file = drive_dir / "performance_test.csv"
+    insights_output_file = drive_dir / "performance_insights.csv"
+    performance_test.run(domain, save_file_loc=pagespeed_output_file, insight_sav_loc=insights_output_file)
+    return (pagespeed_output_file, insights_output_file)

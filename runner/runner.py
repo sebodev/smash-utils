@@ -3,12 +3,18 @@
 import sys
 from runner.get_cmd_line_options import args
 from runner import vars #oops I just overwrote a built in function. To access it use `import builtins; builtins.vars`
+from lib import domains
 
 if "--setup" in sys.argv:
     from runner import setup
     setup.main()
 
-elif "--server" in sys.argv:
+elif "--new" in sys.argv:
+    from wordpress_utils import new
+    option = new.prompt_for_task(tasks_to_run)
+    sys.argv.append(option)
+
+elif "--server" in sys.argv or "--servers" in sys.argv:
     from maintenance_utils import server_info
     server_info.main(args.server)
 
@@ -17,10 +23,12 @@ elif "--ftp" in sys.argv:
     ftp_info.main(args.ftp)
 
 elif "--ssh" in sys.argv:
-    import subprocess
-    import lib.servers
-    server = lib.servers.get(args.ssh)
-    subprocess.run("ssh {}@{}".format(server["ssh-username"], server["host"]))
+    from maintenance_utils import ssh_session
+    ssh_session.main(args.ssh)
+
+elif "--hosts" in sys.argv:
+    from maintenance_utils import edit_hosts_file
+    edit_hosts_file.main()
 
 elif "--monthly" in sys.argv:
     from maintenance_utils import monthly
@@ -29,29 +37,19 @@ elif "--monthly" in sys.argv:
         domain = args.monthly[0]
     except IndexError:
         domain = None
-    try:
-        server = args.monthly[1]
-    except IndexError:
         server = None
+
+    if domain:
+        server = domains.info(domain)[1]
 
     monthly.main(domain, server)
 
 elif "--lockouts" in sys.argv:
     from maintenance_utils import security_info
-
-    try:
-        server = args.lockouts[0]
-    except IndexError:
-        server = input("what server is this on (example wpwarranty): ")
-
-    try:
-        app_name = args.lockouts[1]
-    except IndexError:
-        app_name = None
-
+    _, server, app_name = domains.info(args.lockouts[0])
     security_info.main(server, app_name)
 
-elif "--backup" in sys.argv or "--back" in sys.argv:
+elif "--backup" in sys.argv:
     from maintenance_utils import migrate
 
     try:
@@ -68,6 +66,27 @@ elif "--backup" in sys.argv or "--back" in sys.argv:
         local_dir = None
 
     migrate.backup(server, dir_on_server, local_dir)
+
+
+elif "--db-backup" in sys.argv:
+    from maintenance_utils import migrate
+
+    try:
+        server = args.db_backup[0]
+    except IndexError:
+        server = None
+
+    try:
+        app = args.db_backup[1]
+    except IndexError:
+        app = None
+
+    try:
+        local_dir = args.db_backup[2]
+    except IndexError:
+        local_dir = None
+
+    migrate.backup(server, app, local_dir, do_db_backup=True, do_files_backup=False)
 
 elif "--restore" in sys.argv:
     from maintenance_utils import migrate
@@ -156,14 +175,11 @@ elif "--chrome" in sys.argv:
 elif "--db" in sys.argv:
     from maintenance_utils import db_passwords
     try:
-        server = args.db[0]
+        site = args.db[0]
     except IndexError:
-        server = input('Enter a server entry: ')
+        site = input('Enter a website: ')
 
-    try:
-        app_name = args.db[1]
-    except IndexError:
-        app_name = input('Enter the Webfaction App Name: ')
+    _, server, app_name = domains.info(site)
 
     db_passwords.main(server, app_name)
 
@@ -171,13 +187,6 @@ elif "--update" in sys.argv:
     import subprocess
     print('cd %s & git pull' % vars.script_dir)
     subprocess.call( 'cd %s && git pull' % vars.script_dir )
-
-elif "--new" in sys.argv:
-    from wordpress_utils import new
-    task = new.prompt_for_task(tasks_to_run)
-    while not vars.current_project:
-        vars.change_current_project(input('Enter a project (or a subdomain): '))
-    tasks[task]()
 
 elif "--dns" in sys.argv:
     from maintenance_utils import dns
@@ -189,8 +198,7 @@ elif "--dns" in sys.argv:
         dns_output_file = args.dns[1]
     except IndexError:
         dns_output_file = None
-    while not args.dns:
-        domain = args.dns = input('Enter a domain (example google.com): ')
+
     dns.main(domain, dns_output_file)
 
 elif "--wpw" in sys.argv:
@@ -218,44 +226,61 @@ elif ("--md5" in sys.argv or "--hash" in sys.argv):
     md5.main(args.md5)
 
 elif ("--wp" in sys.argv or "--wordpress" in sys.argv):
+    from wordpress_utils import wordpress_install2
 
     try:
         site = args.wordpress[0]
     except IndexError:
         site = None
-    while not site:
-        site = input("Enter the site name (example cdc.sebodev.com)")
 
     try:
         server = args.wordpress[1]
     except IndexError:
-        server = input('Enter a server entry. Leave blank to use the Sebodev Webfaction server: ')
-        if not server:
-            server = "sebodev"
+        server = None
 
     app_type = None
     try:
         app_type = args.wordpress[2]
     except IndexError:
-        pass
-    if app_type == "static":
-        app_type = "static_php70"
+        app_type = wordpress_install2.CURRENT_WORDPRESS_VERSION
 
-    #from wordpress_utils import wordpress_install
-
-    from wordpress_utils import wordpress_install2
     wordpress_install2.create(site, server, app_type)
+
+    # the following is the old way of creating sites with selenium
+    # vars.change_current_project(site)
+    # from wordpress_utils import wordpress_install
 
 elif ("-_" in sys.argv or "_s-project" in sys.argv):
     while not args._s_project:
         args._s_project = input('Enter the project name: ')
-    vars.change_current_project(args._s_project)
     import wordpress_utils.new_project
 
 elif ("--down" in sys.argv or "--download" in sys.argv):
-    from wordpress_utils import existing_project
-    existing_project.parse_args(args.download)
+    from wordpress_utils import download_project
+
+    try:
+        site = args[0]
+    except IndexError:
+        site = None
+
+    try:
+        theme = args[1]
+    except IndexError:
+        theme = None
+
+    download_project.main(ste, theme)
 
 elif ("-w" in sys.argv or "--watch" in sys.argv):
-    vars.change_current_project(args.watch)
-    import wordpress_utils.watch
+    from wordpress_utils import watch
+
+    try:
+        project = args.watch[0]
+    except IndexError:
+        project = None
+
+    try:
+        theme_or_plugin = args.watch[1]
+    except IndexError:
+        theme_or_plugin = None
+
+    watch.main(project, theme_or_plugin)

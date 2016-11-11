@@ -1,5 +1,6 @@
 """ this module is for getting info about the projects inside of vars.projects_root_dir """
 
+from pathlib import Path
 from runner import vars
 
 def get_project_from_dir(the_dir):
@@ -11,7 +12,7 @@ def get_project_from_dir(the_dir):
     except ValueError:
         return None
 
-def info(project, theme=None, user="sebodev"):
+def info(project, theme=None, user=None):
     '''returns a dictionary of info about a project'''
 
     project_dir = vars.projects_root_dir / (project or '')
@@ -19,11 +20,16 @@ def info(project, theme=None, user="sebodev"):
         theme = project
     if theme != project:
         project_dir = project_dir / theme
+    project_dir = str(project_dir)
+    
     webfaction_theme_dir = '/home/{}/webapps/{}/wp-content/themes/{}/'.format(user, project, theme)
+    webfaction_plugins_dir = '/home/{}/webapps/{}/wp-content/plugins/'.format(user, project)
 
     return {
+            "user": user,
             "project": project,
             "theme": theme,
             "project_dir": project_dir,
-            "webfaction_theme_dir": webfaction_theme_dir
+            "webfaction_theme_dir": webfaction_theme_dir,
+            "webfaction_plugins_dir": webfaction_plugins_dir
     }

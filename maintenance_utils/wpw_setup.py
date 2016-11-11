@@ -106,7 +106,8 @@ def check_ssl_expiration():
 def initial_performance_test():
     from maintenance_utils import performance_test
     save_loc = client_dir / "initial-performance-test.csv"
-    performance_test.run(client_website, save_loc)
+    save_loc2 = client_dir / "initial-performance-insights.csv"
+    performance_test.run(client_website, save_loc, save_loc2)
 
 def main(name, level):
     init(name, level)

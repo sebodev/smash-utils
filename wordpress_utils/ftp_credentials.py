@@ -27,7 +27,7 @@ def setup_remote_sync(server):
         ".ftppass"
       ],
       "transport": "scp",
-      "target": """ + '"' + vars.servers_theme_dir + '"' + """,
+      "target": """ + '"' + str(vars.servers_theme_dir) + '"' + """,
       "username": """ + '"' + ssh_username + '"' + """,
       "password": """ + '"' + ssh_password + '"' + """
     }
@@ -45,5 +45,5 @@ def setup_remote_sync(server):
     }
     """
 
-    with open(str(vars.project_dir) + '\\.ftppass', 'w') as f:
+    with (vars.project_dir / '.ftppass').open('w') as f:
         f.write(ftppass_contents)

@@ -1,4 +1,4 @@
-'''used by new_project and existing_project to configure projects
+'''used to configure projects
 so that the sebo --watch command will be able to keep the project
 in sync with webfaction.
 '''
@@ -20,4 +20,4 @@ def setup(server):
     elif vars.verbose:
         print("Could not find the file %s. Skipping the npm installation. If this theme was not based off the undescores theme, this is ok." % npm_packages)
     print('-' * 80)
-    print("\nCreated project %s. Happy coding.\n" % vars.current_project)
+    print("\nCreated project for %s. Happy coding.\n" % vars.current_project)

@@ -29,7 +29,10 @@ def ssh(server_entry):
     from lib._passwords import ssh as ssh_
     return ssh_.find(server_entry)
 
-
+def db_local(wp_config_file):
+    """ like the db function, but looks at a local wp-config.php """
+    from lib._passwords import db as db_
+    return db_.find_local(wp_config_file)
 
 
 #

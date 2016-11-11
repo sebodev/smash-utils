@@ -1,5 +1,6 @@
 import sys
 from pathlib import Path
+import json
 
 import lxml.etree
 import requests
@@ -8,11 +9,9 @@ import time
 from runner import vars
 
 #webpagetest.org rest api documentation at https://sites.google.com/a/webpagetest.org/docs/advanced-features/webpagetest-restful-apis
+#Google insights api documentation at https://developers.google.com/speed/docs/insights/v1/reference
 
-RUNS_PER_TEST = 5
-
-def main(domain, save_file_loc=None):
-    return run(domain, save_file_loc)
+RUNS_PER_TEST = 4
 
 def loading_dots():
     while True:
@@ -20,7 +19,108 @@ def loading_dots():
         yield("\r.. ")
         yield("\r...")
 
-def run(domain, save_file_loc=None):
+def run(domain, save_file_loc=None, insight_sav_loc=None):
+
+    csv, first_load, repeat_load = pagespeed(domain)
+    if save_file_loc:
+        save_file_loc = Path(save_file_loc)
+        save_file_loc.write_bytes(csv)
+
+    print()
+    print("First view load time: ", first_load, " seconds")
+    print("Repeat view load time: ", repeat_load, " seconds")
+
+    result, rating = google_insights(domain)
+    if insight_sav_loc:
+        insight_sav_loc = Path(insight_sav_loc)
+
+        csv = ""
+        for key in result.keys():
+            csv += key + ","
+        csv.rstrip(",")
+        csv += "\n"
+        for val in result.values():
+            csv += val + ","
+
+        insight_sav_loc.write_bytes(csv)
+
+    print("Google insight score: ", rating, "/100")
+
+def google_insights(domain):
+    """ performs a google insights test, and returns the results """
+    s = requests.session()
+    params = {
+        "url": "http://" + domain,
+        "key": vars.google_drive_client_secret
+    }
+    res = s.get("https://www.googleapis.com/pagespeedonline/v2/runPagespeed", params=params).text
+    #import pprint; pprint.pprint(json.loads(res))
+
+    data = json.loads(res)
+    title = data["title"]
+    score = data["ruleGroups"]["SPEED"].get("score")
+    pageStats = data["pageStats"] #breaks down js, css, etc. by bytes and number of requests
+
+    cssResponseBytes = int(pageStats.get("cssResponseBytes", 0))
+    htmlResponseBytes = int(pageStats.get("htmlResponseBytes", 0))
+    imageResponseBytes = int(pageStats.get("imageResponseBytes", 0))
+    javascriptResponseBytes = int(pageStats.get("javascriptResponseBytes", 0))
+    otherResponseBytes = int(pageStats.get("otherResponseBytes", 0))
+    totalRequestBytes = int(pageStats.get("totalRequestBytes", 0))
+
+    totalResponseBytes = cssResponseBytes + htmlResponseBytes + imageResponseBytes + javascriptResponseBytes + otherResponseBytes
+    cssBytesReceived = round(cssResponseBytes / totalResponseBytes * 100, 2)
+    htmlBytesReceived = round(htmlResponseBytes / totalResponseBytes * 100, 2)
+    imageBytesReceived = round(imageResponseBytes / totalResponseBytes * 100, 2)
+    jsBytesReceived = round(javascriptResponseBytes / totalResponseBytes * 100, 2)
+    otherBytesReceived = round(otherResponseBytes / totalResponseBytes * 100, 2)
+
+    numberResources = pageStats.get("numberResources")
+
+    results = data["formattedResults"]["ruleResults"]
+    PrioritizeVisibleContent = round(results["PrioritizeVisibleContent"].get("ruleImpact", 0))
+    EnableGzipCompression = round(results["EnableGzipCompression"].get("ruleImpact", 0))
+    MinifyHTML = round(results["MinifyHTML"].get("ruleImpact", 0))
+    MinifyCss = round(results["MinifyCss"].get("ruleImpact", 0))
+    AvoidLandingPageRedirects = round(results["AvoidLandingPageRedirects"].get("ruleImpact", 0))
+    MinifyJavaScript = round(results["MinifyJavaScript"].get("ruleImpact", 0))
+    LeverageBrowserCaching = round(results["LeverageBrowserCaching"].get("ruleImpact", 0))
+    MinimizeRenderBlockingResources = round(results["MinimizeRenderBlockingResources"].get("ruleImpact", 0))
+    MainResourceServerResponseTime = round(results["MainResourceServerResponseTime"].get("ruleImpact", 0))
+
+    d = {
+        "title": title.encode('ascii', errors='ignore'),
+        "requests_made": numberResources,
+
+        "total_bytes_Received": totalResponseBytes,
+        "html_percentage": htmlBytesReceived,
+        "css_percentage": cssBytesReceived,
+        "js_percentage": jsBytesReceived,
+        "image_percentage": imageBytesReceived,
+        "other_percentage": otherBytesReceived,
+
+        "prioritize_visible_content_impact": PrioritizeVisibleContent,
+        "gzip_compression_impact": EnableGzipCompression,
+        "minify_html_impact": MinifyHTML,
+        "minify_css_impact": MinifyCss,
+        "avoid_landing_page_redirects_impact": AvoidLandingPageRedirects,
+        "minify_js_impact": MinifyJavaScript,
+        "caching_impact": LeverageBrowserCaching,
+        "render_blocking_resources_impact": MinimizeRenderBlockingResources,
+        "server_response_time_impact": MainResourceServerResponseTime,
+
+        "score": score
+    }
+
+    if vars.verbose:
+        print("Here are the results of the Google Insights test: ")
+        import pprint
+        pprint.pprint(d)
+
+    return (d, score)
+
+def pagespeed(domain):
+    """ Performs webpagetest.org tests, and returns the results """
     api_key = "A.d01883a3916a31ca52ac7cf481756263" #we're limited to 100 tests per day with this key
     resp = requests.post("http://www.webpagetest.org/runtest.php", params={
         "label": domain,
@@ -64,8 +164,6 @@ def run(domain, save_file_loc=None):
     else:
         raise Exception("timed out")
 
-
-
     resp = requests.get(xml_url) #add params={"pagespeed": "1"} to get scorecard results
     root = lxml.etree.fromstring(resp.content)
     fv = first_view = root.find(".//data/run/firstView/results")
@@ -73,22 +171,20 @@ def run(domain, save_file_loc=None):
 
     fv_load_time = fv.find(".//loadTime")
     rv_load_time = rv.find(".//loadTime")
-    print()
+
     fv_load_time = str(lxml.etree.tostring(fv_load_time))[12:-14]
     fv_load_time = int(fv_load_time)/1000
     rv_load_time = str(lxml.etree.tostring(rv_load_time))[12:-14]
     rv_load_time = int(rv_load_time)/1000
-    print("first view load time:", fv_load_time, " seconds")
-    print("repeat view load time: ", rv_load_time, " seconds")
 
-    if save_file_loc:
-        resp = requests.get(csv_summary_url)
-        save_file_loc = Path(save_file_loc)
-        save_file_loc.write_bytes(resp.content)
+    resp = requests.get(csv_summary_url)
+
+    return (resp.content, fv_load_time, rv_load_time)
 
 
+# A sample Google Insights response can be found at https://developers.google.com/speed/docs/insights/v1/reference#alttypes_pagespeedonline_pagespeedapi_runpagespeed_json
+# Below is a sample of the pagespeed data for the first view data
 """
-Below is a sample first view data result
 <URL>http://unifiedfireservicearea.com</URL>
 <loadTime>3715</loadTime>
 <TTFB>520</TTFB>

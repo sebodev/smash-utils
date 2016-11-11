@@ -3,17 +3,33 @@
 
 import os, sys, time, re, socket
 import urllib.request, urllib.parse, urllib.error, urllib.parse, unittest
+import xmlrpc.client
 
 from runner import vars
 from lib import servers
 from lib import webfaction
 from lib import password_creator
 from lib.errors import SmashException
+from lib import domains
+from lib import passwords
 
 CURRENT_WORDPRESS_VERSION = "wordpress_461"
 
 #app_type can also be static_php70
 def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
+
+    while not website:
+        website = input("Enter the site name (example cdc.sebodev.com): ")
+
+    if "sebodev.com" in website:
+        server = "sebodev"
+    if "sitesmash.com" in website:
+        server = "sitesmash"
+    if not server:
+        server = input('Enter the server you would like to use (example sebodev): ')
+
+    if app_type == "static":
+        app_type = "static_php70"
 
     site = website.replace("https://", "").replace("https://", "").replace("www.", "").replace(" ", "").rstrip("/")
     ip = socket.gethostbyname(vars.servers[server]["host"])
@@ -45,13 +61,58 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
     site_name = app_name
     app_name = app_name[:max_length]
     https = False
-    subdomains = [site, "www"+site]
+    subdomains = [site, "www."+site]
 
-    wf.create_domain(wf_id, subdomains[0], "www")
-    res = wf.create_app(wf_id, app_name, app_type)
+    current_domains = webfaction.get_domains(server, app_name)
+    if current_domains:
+        domain_exists = subdomains[0] in webfaction.get_domains(server)
+    else:
+        domain_exists = None
+
+    if domain_exists:
+        if vars.verbose:
+            print("The domain already exists.")
+    else:
+        wf.create_domain(wf_id, subdomains[0], "www")
+
+    if app_name in webfaction.get_webapps(server):
+        resp = input("Hmm, The Webfaction app {} already exists. Do you want to delete the website, app, and database [yes/No]".format(app_name))
+        if resp.lower().startswith("y"):
+            #raise SmashException("Webapp already exists")
+            db_name, _, db_user, _ = passwords.db(server, app_name)
+            if vars.verbose:
+                print("deleting website with the name={} and ip address={}".format(site_name, ip))
+            try:
+                wf.delete_website(wf_id, site_name, ip)
+            except xmlrpc.client.Fault:
+                #will fail if the site name is different from the app name
+                #could be fixed by retrieving the actual site name when we need to delete a website
+                #instead of trying to use the app name for the site name
+                #but I don't expect we'll be needing to recreate websites that often
+                raise SmashException("Failed to delete {}. You'll have to manually delete it".format(site_name))
+            wf.delete_app(wf_id, app_name)
+            wf.delete_db(wf_id, dn_name, "mysql")
+            wf.delete_db_user(wf_id, db_user, "mysql")
+            time.sleep(1)
+            res = wf.create_app(wf_id, app_name, app_type)
+        else:
+            res = wf.list_apps(wf_id)
+            for app in res:
+                if app["name"] == app_name:
+                    res = app
+                    break
+            else:
+                raise Exception("Failed to retrieve info for the app {}. You'll have to delete the app and try again.".format(app_name))
+    else:
+        if vars.verbose:
+            print("creating app with the name={} and type={}".format(app_name, app_type))
+        res = wf.create_app(wf_id, app_name, app_type)
+
     wp_password = res['extra_info']
     if vars.verbose:
         print("wordpress password: %s" % wp_password)
+    if vars.verbose:
+        print("creating the website where site_name={}, ip={}, https={}, domains={}, apps={}".format(site_name, ip, https, subdomains, [app_name, "/"]))
     res = wf.create_website(wf_id, site_name, ip, https, subdomains, [app_name, "/"])
 
     try:
@@ -99,7 +160,7 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
         driver.find_element_by_id("user_pass").clear()
         driver.find_element_by_id("user_pass").send_keys(wp_initial_passwd)
         driver.find_element_by_id("wp-submit").click()
-        driver.get('http://%s.sebodev.com/wp-admin/user-new.php' % website_name)
+        driver.get('http://%s.sebodev.com/wp-admin/user-new.php' % site_name)
 
         #create the sitekeeper user
         def create_password():
@@ -163,7 +224,7 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
         #change the blog name
         driver.get('http://' + site + "/wp-admin/options-general.php")
         driver.find_element_by_id("blogname").clear()
-        driver.find_element_by_id("blogname").send_keys(website_name)
+        driver.find_element_by_id("blogname").send_keys(site_name)
         driver.find_element_by_id("blogdescription").clear()
         driver.find_element_by_id("blogdescription").send_keys("")
         driver.find_element_by_id("admin_email").clear()

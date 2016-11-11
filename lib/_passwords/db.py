@@ -1,4 +1,5 @@
 import ftplib
+from pathlib import Path
 from runner import vars
 import lib.lastpass
 import lib.passwords
@@ -81,6 +82,19 @@ def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
             raise lib.errors.CredentialsNotFound("Sorry sir, I've failed you. I couldn't find any database info in the config file.")
 
         return common.credential(name, host, user, password)
+
+def find_local(wp_config_file):
+    data = Path(wp_config_file).read_text()
+
+    name = get_define_value(data, "DB_NAME")
+    user = get_define_value(data, "DB_USER")
+    password = get_define_value(data, "DB_PASSWORD")
+    host = get_define_value(data, "DB_HOST")
+
+    if not (name or user or password or host):
+        raise lib.errors.CredentialsNotFound("Well that's not fun. I couldn't find all of the database info in the wp-config file.")
+
+    return common.credential(name, host, user, password)
 
 def get_define_value(data, define_variable):
     ret = data[data.find(define_variable) : ]

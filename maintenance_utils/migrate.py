@@ -1,11 +1,9 @@
-import getpass, datetime, os, os.path
+import getpass, datetime, os, os.path, subprocess
+from pathlib import Path
 
 import lib.webfaction
 from runner import vars
-import subprocess
 import lib.password_creator
-from maintenance_utils import db_passwords
-from pathlib import Path
 from lib import servers
 from lib import errors
 from lib import passwords
@@ -75,7 +73,7 @@ def backup(server, server_dir, local_dir, do_db_backup=True, do_files_backup=Tru
 
         if not db_output_file.is_file():
             raise SmashException("Failed to create the database backup. {} does not exist".format(db_output_file))
-        if not db_output_file.stat().st_size > 0:
+        if not db_output_file.stat().st_size > 2048:
             raise SmashException("Database backup file is empty")
 
     if do_files_backup:
@@ -113,6 +111,11 @@ def restore(server, server_dir, sqlDump=None, backupFile=None):
     while not server:
         server = input("which server will we be restoring to today: ")
 
+    if (sqlDump and backupFile):
+        if sqlDump.endswith(".tar.gz") and backupFile.endswith(".sql"):
+            print("I wanted the sql file first, and then the tar.gz file, but that's fine. I'll fix it.")
+            sqlDump, backupFile = backupFile, sqlDump
+
     apps = None
     while not server_dir:
         try:
@@ -146,15 +149,21 @@ def restore(server, server_dir, sqlDump=None, backupFile=None):
             while not backupFile:
                 backupFile = input("where is the .tar.gz file you would like to restore: ")
 
+    if sqlDump:
+        print("We need some info to be able to perform a search and replace on the database URLs.")
+        search = input("Enter a search term: ")
+        replace = input("What would you like to replace {} with: ".format(search))
+        print("Thank you. I'll start backing everythin up.")
+
     if backupFile:
         if apps and maybe_app not in apps:
             site = input("Enter the domain for the website you would like us to create, and we'll restore the backup there: ")
             wordpress_install2.create(site, server, "static_php70")
 
-        print("restoring {}Mb backup".format(os.path.getsize(backupFile) >> 20))
+        print("---- restoring {}Mb backup ----\n".format(os.path.getsize(backupFile) >> 20))
 
-        flags = "zxfv" if vars.verbose else "zxf"
-        cmd = 'ssh {}@{} "gzip -d | (cd {} && tar zxf -)" < {}'.format(servers.get(server, "ssh-username"), servers.get(server, "host"), server_dir, flags, backupFile)
+        flags = "-zxvf" if vars.verbose else "-zxf"
+        cmd = 'ssh {}@{} "gzip -d | (cd {} && tar {} -)" < {}'.format(servers.get(server, "ssh-username"), servers.get(server, "host"), server_dir, flags, backupFile)
         if vars.verbose:
             print("executing command " + cmd)
         subprocess.call(cmd, shell=True)
@@ -162,32 +171,72 @@ def restore(server, server_dir, sqlDump=None, backupFile=None):
     db_name, db_host, db_user, db_pass = passwords.db(server, server_dir)
 
     if sqlDump:
+
+        def prompt_for_db_info():
+            nonlocal db_name, db_host, db_user, db_password
+            while not db_name:
+                db_name = input("What's the db name: ")
+            while not db_host:
+                db_host = input("What's the db host: ")
+            while not db_user:
+                db_user = input("What's the db username: ")
+            while not db_password:
+                db_password = input("What's the db password: ")
+
         try:
             db_name, db_host, db_user, db_password = passwords.db(server, server_dir)
+            resp = input("""Would you like to use the database info:
+database name: {}
+database host: {}
+database user: {}
+database password: {}
+[yes/No]: """.format(db_name, db_host, db_user, db_password))
+            if not resp.lower().startswith("y"):
+                prompt_for_db_info()
         except errors.CredentialsNotFound:
             resp = input("I couldn't detect a database on the server. Would you like me to create one [Yes/no]:")
-
             if not resp.startswith("n"):
                 db_name, db_host, db_user, db_password = create_db(app)
             else:
                 print("Okey dokey. If I could just grab some info from you about the database, and then I'll get out of your hair.")
-                while not db_name:
-                    db_name = input("What's the db name: ")
-                while not db_host:
-                    db_host = input("What's the db host: ")
-                while not db_user:
-                    db_user = input("What's the db username: ")
-                while not db_password:
-                    db_password = input("What's the db password: ")
+                prompt_for_db_info()
 
-        print("restoring {}Mb database file".format(os.path.getsize(sqlDump) >> 20))
+        print("\n---- restoring {}Mb database file ----\n".format(os.path.getsize(sqlDump) >> 20))
 
-        cmd = 'ssh {}@{} "(cd {}; tar zxf - | mysql -u {} -p{} {})" < {}'.format(servers.get(server, "ssh-username"), servers.get(server, "host"), server_dir, sqlDump, db_user, db_password, db_name)
+        #flags = "-xvf" if vars.verbose else "-xf"
+        #cmd = 'ssh {}@{} "(cd {} && tar {} - | mysql -u {} -p{} {})" < {}'.format(servers.get(server, "ssh-username"), servers.get(server, "host"), server_dir, flags, db_user, db_password, db_name, sqlDump)
+        cmd = 'ssh {ssh_user}@{ssh_host} "(mysql -u {db_user} -p{db_password} {db_name} | sed `{search}`{replace}` )" < {sqlDump}'.format(
+                                                                    ssh_user=servers.get(server, "ssh-username"),
+                                                                    ssh_host=servers.get(server, "host"),
+                                                                    db_user=db_user,
+                                                                    db_password=db_password,
+                                                                    db_name=db_name,
+                                                                    search=search,
+                                                                    replace=replace,
+                                                                    sqlDump=sqlDump
+                                                                )
         if vars.verbose:
             print("executing command " + cmd)
         subprocess.run(cmd, shell=True)
 
+        #searchAndReplace2(db_name, db_host, db_user, db_password, search=None, replace=None)
+
+def searchAndReplace(server, app, search=None, replace=None):
+    db_name, db_host, db_user, db_password = passwords.db(server, server_dir)
+    return searchAndReplace2(server, db_name, db_host, db_user, db_password, search, replace)
+
+def searchAndReplace2(server, db_name, db_host, db_user, db_password, search=None, replace=None):
+    raise NotImplemented
+    if not search:
+        search = input("Enter a database search term: ")
+    if not replace:
+        replace = input("Enter what you would like to replace {} with: ".format(search))
+
+    cmd = "ssh {}@{} wp search-replace {} {} --skip-columns=guid".format(servers.get(server, "ssh-username"), servers.get(server, "ssh-password"), search, replace) #changing the guids will cause feed readers to see all of the blog posts as new unread articles
+    subprocess.run(cmd)
+
 def create_db(name):
+    raise NotImplemented
     """creates a database and database user with the name passed in.
     returns the database password"""
     user = name

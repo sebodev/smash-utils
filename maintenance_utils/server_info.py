@@ -1,6 +1,7 @@
 import lib.webfaction
 from runner import vars
 import lib.servers
+import lib.domains
 
 def main(domain_or_server):
     """look up a server or domain and return info about the server entry.
@@ -18,6 +19,7 @@ def main(domain_or_server):
         for server in vars.servers.keys():
             print("\n", server)
             print_server_info(server, print_header=False)
+        lib.domains.refresh_domains_cache()
         return
 
     #domain_or_server must be a domain. Let's find the accompanying server and display the server info
@@ -31,8 +33,8 @@ def main(domain_or_server):
             lib.servers.interactively_add_conf_entry(domain_or_server)
 
     else:
-        print("server entry = {}".format(server))
-        print_server_info(server)
+        print("\n{} is on the server {}".format(domain, server))
+        print_server_info(server, print_header=False)
         prompt_add_server(server)
 
 def prompt_add_server(server):

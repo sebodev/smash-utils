@@ -60,21 +60,22 @@ google_drive_client_secret = credentials_conf.get('google-drive', 'client-secret
 #save some variables from the command line options
 from runner.get_cmd_line_options import args
 
-projects_root_dir = None
 current_project = project_info.get_project_from_dir(".")
 verbose = args.verbose
 new_credentials = args.new_credentials
 
 def change_current_project(project, new_theme=None):
     '''deprecated. Use project_info.info() instead '''
-    global current_project, project_dir, webfaction_theme_dir, theme
-
+    global current_project, project_dir, webfaction_theme_dir, theme, servers_theme_dir
+    if not project:
+        project = current_project
     info = project_info.info(project, theme=new_theme, user="sebodev")
 
     theme = info["theme"]
     current_project = info["project"]
-    project_dir = info["project_dir"]
-    webfaction_theme_dir = info["webfaction_theme_dir"]
+    project_dir = Path(info["project_dir"])
+    webfaction_theme_dir = Path(info["webfaction_theme_dir"])
+    servers_theme_dir = webfaction_theme_dir
 
 if current_project:
     change_current_project(current_project)
@@ -91,4 +92,4 @@ except ImportError:
     else:
         raise
 
-lib.servers.save_conf_entries()
+lib.servers.pull_conf_entries()

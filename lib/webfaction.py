@@ -3,6 +3,7 @@ import lib.errors
 from lib import lastpass
 import configparser
 from runner import vars
+from lib import dns
 
 from . import servers
 
@@ -18,7 +19,6 @@ def connect(server):
         current_account = account_cache[server]
         return xmlrpc_cache[server]
 
-    webfaction = xmlrpc.client.ServerProxy("https://api.webfaction.com/")
     username = vars.servers[server]["ssh-username"]
     password = vars.servers[server]["ssh-password"]
     if "webfaction-username" in vars.servers[server].keys():
@@ -26,10 +26,21 @@ def connect(server):
     if "webfaction-password" in vars.servers[server].keys():
         password = vars.servers[server]["webfaction-password"]
 
+    webfaction, wf_id = connect2(username, password)
+
+    xmlrpc_cache[server] = webfaction, wf_id
+    account_cache[server] = current_account
+
+    return webfaction, wf_id
+
+def connect2(username, password):
+    global current_account
+
     if vars.verbose:
         print("logging into webfaction with the credentials {} and {}".format(username, password))
 
     try:
+        webfaction = xmlrpc.client.ServerProxy("https://api.webfaction.com/")
         wf_id, current_account = webfaction.login(username, password)
     except xmlrpc.client.Fault as err:
         if str(err) == "<Fault 1: 'LoginError'>":
@@ -37,8 +48,6 @@ def connect(server):
         else:
             raise
 
-    xmlrpc_cache[server] = webfaction, wf_id
-    account_cache[server] = current_account
     return webfaction, wf_id
 
 def get_webapps(server, domain=None):
@@ -69,20 +78,47 @@ def get_domains(server, app=None):
         wf, wf_id = connect(server)
         resp = wf.list_websites(wf_id)
         for group in resp:
-            if app in group["website_apps"][0]:
+            if group["website_apps"] and app in group["website_apps"][0]:
                 return group["subdomains"]
 
 def get_server(domain):
-    """ Checks every server stored in the servers file to see which server the domain is on """
+    """gets the server associated with the domain.
+    First checks the domains currently known to be associated with each server.
+    Use the --new-credentials flag to refresh this info.
+    If the server cannot be found, logs into to all of the Webfaction servers in the vars.servers dictionary looking
+    for the associated server. Webfaction accounts with incorrect login info are currently being ignored """
+
+    #recreate the domains associated with each server if the --new-credentials flag is passed in
+    if vars.new_credentials:
+        for server_name, server in vars.servers.items():
+            ds = get_domains(server_name)
+            if ds:
+                server["domains"] = ds
+        servers.save_servers()
+
+    #method1
+    for server_name, server in vars.servers.items():
+        ds = server.get("domains")
+        if ds:
+            for d in ds:
+                if d == domain:
+                    return server_name
+
+    #method2
+    if vars.verbose:
+        print("checking all of the Webfaction servers for the domain {}".format(domain))
     for server in vars.servers.keys():
-        try:
-            if domain in get_domains(server):
-                return server
-        except lib.errors.LoginError:
-            pass
+        if servers.get(server, "is-webfaction-server"):
+            try:
+                if domain in get_domains(server):
+                    return server
+            except lib.errors.LoginError:
+                pass
 
 def get_user(server):
     """grabs the name of the webfaction user"""
+    if server not in account_cache:
+        connect(server)
     return account_cache[server]["username"]
 
 def can_login(server):
@@ -93,3 +129,36 @@ def can_login(server):
     except lib.errors.LoginError:
         return False
     return True
+
+def is_webfaction(domain_or_server):
+    """ Does it's best to determine if a domain or server is running on a Webfaction server """
+    return is_webfaction_server(domain_or_server) or is_webfaction_domain(domain_or_server)
+
+def is_webfaction_server(server):
+    """Checks if a server is a Webfaction server. The credentials do not have to be valid, except in a few cases such as when cloudflare is used as a CDN"""
+    host = servers.get(server, "host", create_if_needed=False)
+    if host:
+        if "webfaction" in host:
+            return True
+
+        #this takes care of the situation where an ip address was used as the host
+        host = dns.get_web_host(host)
+        if "webfaction" in host:
+            return True
+
+    #take care of the situation where cloudflare is used. The credentials have to be valid
+    if can_login(server):
+        return True
+
+    return False
+
+def is_webfaction_domain(domain, better_checking=True):
+    """ Does a reverse nslookup to check if a domain belongs to Webfaction.
+    Reverse nslookups can fail as is the case when a website is on cloudflare.
+    If better_checking is True, logs into all servers to try to find the domain if the reverse nslookup failed"""
+    host = dns.get_web_host(domain)
+    if host and "webfaction" in host:
+        return True
+    if better_checking:
+        return bool(get_server(domain))
+    return False

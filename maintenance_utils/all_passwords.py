@@ -14,6 +14,8 @@ def main(search_term):
     #filezilla
     try:
         maintenance_utils.filezilla_passwords.main(search_term)
+    except lib.errors.CredentialsNotFound:
+        pass
     except Exception as err:
         failed.append("Filezilla")
         if vars.verbose:
@@ -22,6 +24,8 @@ def main(search_term):
     #chrome
     try:
         maintenance_utils.chrome_passwords.main(search_term)
+    except lib.errors.CredentialsNotFound:
+        pass
     except Exception as err:
         failed.append("Chrome")
         if vars.verbose:
@@ -30,6 +34,8 @@ def main(search_term):
     #lastpass
     try:
         maintenance_utils.lastpass_passwords.main(search_term)
+    except lib.errors.CredentialsNotFound:
+        pass
     except Exception as err:
         failed.append("Lastpass")
         if vars.verbose:

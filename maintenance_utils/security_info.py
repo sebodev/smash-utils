@@ -3,7 +3,6 @@ import lxml.etree
 from runner import vars
 from lib import passwords
 from lib import servers
-from maintenance_utils import db_passwords
 
 tmp_dir = vars.storage_dir / "tmp"
 
@@ -69,14 +68,7 @@ def search_lastpass_and_get_lockouts(app_name, ftp_search_term, ssh_search_term=
 
     database, db_host, db_user, db_password =  passwords.get_db_credentials(ftp_search_term, app_name)
 
-    # ssh_user = "wpwarranty"
-    # host = "web534.webfaction.com"
-    # db_user = "cdcutah"
-    # db_password = "4LfOUmUN3nw3"
-    # database = "cdcutah"
     print( number_of_lockouts(ssh_user, host, db_user, db_password, database) )
-
-
 
 def main(server, app_name):
 
@@ -92,5 +84,5 @@ def main(server, app_name):
             print("I'd love to look that up for you, but {} isn't an app on the server {}.".format(app_name, server))
             app_name = input("I suppose I'll give you another chance. What app would you like to use: ")
 
-    database, db_host, db_user, db_password =  db_passwords.find(server, app_name)
+    database, db_host, db_user, db_password =  passwords.db(server, app_name)
     print( number_of_lockouts(servers.get(server, "ssh-username"), servers.get(server, "host"), db_user, db_password, database) )

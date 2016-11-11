@@ -22,6 +22,7 @@ import sys
 
 def setup_servers_conf():
     lib.servers.add_conf_entry("sebodev", "Sebodev FTP", "Sebodev SSH", "Sebodev Webfaction Account")
+    lib.servers.add_conf_entry("sitesmash", "sitesmash webfaction account", "sitesmash webfaction account", "sitesmash webfaction account")
     lib.servers.add_conf_entry("wpwarranty", ssh_is_ftp=True)
 
 def save_personal_info():
@@ -103,7 +104,10 @@ def install_dependencies():
     subprocess.run("apm install remote-sync", shell=True)
 
     subprocess.run("pip install --upgrade requests", shell=True)
-    subprocess.run("pip install --upgrade lxml", shell=True)
+    try:
+        subprocess.check_output("pip install --upgrade lxml", shell=True)
+    except subprocess.CalledProcessError:
+        input("pip install the appropriate lxml package from {}".format("http://www.lfd.uci.edu/~gohlke/pythonlibs/#lxml"))
     subprocess.run("pip install --upgrade pycrypto", shell=True)
     subprocess.run("pip install --upgrade google-api-python-client", shell=True)
 
