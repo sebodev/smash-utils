@@ -17,15 +17,31 @@ def info(domain_or_server, create_if_needed=True):
     if webfaction.is_webfaction_domain(domain):
         server = webfaction.get_server(domain)
         if server:
-            app = webfaction.get_webapps(server, domain)[0]
+            app = webfaction.get_webapps(server, domain)
+            if app:
+                app = app[0]
+            if vars.verbose:
+                print(domain, "maps to the server", server, "and the app", app)
         elif webfaction.can_login(domain) and domain in vars.servers:
-            server = domain
-    if server:
+            server = domain_or_server
+    else:
+        for server_name, s in vars.servers.items():
+            ds = s.get("domains")
+            if ds:
+                for d in eval(ds):
+                    if d == domain:
+                        server = server_name
+        if not server:
+            server = domain_or_server
+    if server: #this will be True unless we need to create a new server entry
         server_info = servers.get(server)
     elif create_if_needed:
+        if "." not in domain:
+            raise SmashException("Whoops {} is not a valid website.".format(domain))
         resp = input("No server entries exists for the domain {}. Would you like to add one now [Yes/no] ".format(domain))
         if not resp.lower().startswith("n"):
             server = servers.interactively_add_conf_entry()
+            server_info = servers.get(server)
             try:
                 app = webfaction.get_webapps(server, domain)[0]
             except:

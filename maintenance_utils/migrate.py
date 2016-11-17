@@ -7,6 +7,7 @@ import lib.password_creator
 from lib import servers
 from lib import errors
 from lib import passwords
+from lib import domains
 #from maintenance_utils import wordpress_install2
 from lib.errors import SmashException
 
@@ -16,7 +17,7 @@ def backup(server, server_dir, local_dir, do_db_backup=True, do_files_backup=Tru
 
     while not server:
         server = input('Enter the server entry we are backuping from: ')
-    if not vars.servers.exists(server):
+    if server not in vars.servers:
         print("Hello matey, we need some info about the server you're wanting to perform a backup of")
         lib.servers.interactively_add_conf_entry(server)
 
@@ -91,7 +92,7 @@ def backup(server, server_dir, local_dir, do_db_backup=True, do_files_backup=Tru
 
         print("\n----- backing up {} -----\n".format(size))
 
-        flags = "zcfv" if vars.verbose else "zcf"
+        flags = "zcfv" if vars.verbose else "zcf --totals"
         cmd = 'ssh {}@{} "tar -{} - {} -C {} . | gzip -c" > {}'.format(servers.get(server, "ssh-username"), servers.get(server, "host"), flags, server_dir, server_dir, output_file)
         subprocess.run(cmd, shell=True)
 
@@ -108,6 +109,7 @@ def backup(server, server_dir, local_dir, do_db_backup=True, do_files_backup=Tru
 def restore(server, server_dir, sqlDump=None, backupFile=None):
     """backupFile and sqlDump must be .tar.gz files
     server_dir can be a webfaction app name as well, and will be created if it does not exist"""
+
     while not server:
         server = input("which server will we be restoring to today: ")
 
@@ -155,21 +157,6 @@ def restore(server, server_dir, sqlDump=None, backupFile=None):
         replace = input("What would you like to replace {} with: ".format(search))
         print("Thank you. I'll start backing everythin up.")
 
-    if backupFile:
-        if apps and maybe_app not in apps:
-            site = input("Enter the domain for the website you would like us to create, and we'll restore the backup there: ")
-            wordpress_install2.create(site, server, "static_php70")
-
-        print("---- restoring {}Mb backup ----\n".format(os.path.getsize(backupFile) >> 20))
-
-        flags = "-zxvf" if vars.verbose else "-zxf"
-        cmd = 'ssh {}@{} "gzip -d | (cd {} && tar {} -)" < {}'.format(servers.get(server, "ssh-username"), servers.get(server, "host"), server_dir, flags, backupFile)
-        if vars.verbose:
-            print("executing command " + cmd)
-        subprocess.call(cmd, shell=True)
-
-    db_name, db_host, db_user, db_pass = passwords.db(server, server_dir)
-
     if sqlDump:
 
         def prompt_for_db_info():
@@ -201,11 +188,11 @@ database password: {}
                 print("Okey dokey. If I could just grab some info from you about the database, and then I'll get out of your hair.")
                 prompt_for_db_info()
 
-        print("\n---- restoring {}Mb database file ----\n".format(os.path.getsize(sqlDump) >> 20))
+        print("\n---- restoring {}Kb database file ----\n".format(os.path.getsize(sqlDump) >> 10))
 
         #flags = "-xvf" if vars.verbose else "-xf"
         #cmd = 'ssh {}@{} "(cd {} && tar {} - | mysql -u {} -p{} {})" < {}'.format(servers.get(server, "ssh-username"), servers.get(server, "host"), server_dir, flags, db_user, db_password, db_name, sqlDump)
-        cmd = 'ssh {ssh_user}@{ssh_host} "(mysql -u {db_user} -p{db_password} {db_name} | sed `{search}`{replace}` )" < {sqlDump}'.format(
+        cmd = 'ssh {ssh_user}@{ssh_host} "(sed s@{search}@{replace}@g | mysql -u {db_user} -p{db_password} {db_name} )" < {sqlDump}'.format(
                                                                     ssh_user=servers.get(server, "ssh-username"),
                                                                     ssh_host=servers.get(server, "host"),
                                                                     db_user=db_user,
@@ -219,9 +206,25 @@ database password: {}
             print("executing command " + cmd)
         subprocess.run(cmd, shell=True)
 
-        #searchAndReplace2(db_name, db_host, db_user, db_password, search=None, replace=None)
+        #ToDo: change database info in wp-config.php
+
+    if backupFile and False: ########################################################################################################################################
+        if apps and maybe_app not in apps:
+            site = input("Enter the domain for the website you would like us to create, and we'll restore the backup there: ")
+            wordpress_install2.create(site, server, "static_php70")
+
+        print("---- restoring {}Mb backup ----\n".format(os.path.getsize(backupFile) >> 20))
+
+        flags = "-zxvf" if vars.verbose else "-zxf"
+        cmd = 'ssh {}@{} "gzip -d | (cd {} && tar {} -)" < {}'.format(servers.get(server, "ssh-username"), servers.get(server, "host"), server_dir, flags, backupFile)
+        if vars.verbose:
+            print("executing command " + cmd)
+        subprocess.call(cmd, shell=True)
+
+    db_name, db_host, db_user, db_pass = passwords.db(server, server_dir)
 
 def searchAndReplace(server, app, search=None, replace=None):
+    raise NotImplemented
     db_name, db_host, db_user, db_password = passwords.db(server, server_dir)
     return searchAndReplace2(server, db_name, db_host, db_user, db_password, search, replace)
 
@@ -247,68 +250,41 @@ def create_db(name):
     print(res)
     return (name, "localhost", user, password)
 
-def migrate_db(from_dict, to_dict, wp_path, output_file):
-    raise NotImplementedError()
-    db_name, _, db_user, db_password = db_passwords.find2(wp_path, from_dict["ftp-username"], from_dict["ftp-password"])
-    cmd = 'ssh {}@{} "mysqldump -u {} -p{} --database {} | gzip -c" | gzip -d > {}'.format(from_dict["ssh-username"], from_dict["host"], db_user, db_password, db_name, output_file)
-    subprocess.run(cmd)
+def migrate(from_site, to_site):
 
-    create_db()
+    f, f_server, f_app = domains.info(from_site)
+    f_db_name, f_db_host, f_db_user, f_db_password = passwords.db(f_server, f_app)
 
-def migrate_files(user, host, backkup_dir, output_file):
-    raise NotImplementedError()
-    user = "wpwarranty"
-    host = "web534.webfaction.com"
-    backup_dir = "~/webapps/appName"
-    output_file = tmp_dir / "backup.tar.gz"
-    cmd = 'ssh {}@{} "tar -zcf – {}" > {}'.format(user, host, backup_dir, output_file)
-    subprocess.run(cmd)
+    t, t_server, t_app = domains.info(to_site)
+    t_db_name, t_db_host, t_db_user, t_db_password = passwords.db(t_server, t_app)
 
-def migrate(serverFrom, serverTo):
-    raise NotImplementedError()
+    f_user = lib.webfaction.get_user(f_server)
+    f_app_dir = "/home/{}/webapps/{}".format(f_user, f_app)
+    f_flags = "-zcfv" if vars.verbose else "-zcf"
 
-    if not vars.servers.exists(serverFrom):
-        print("Hello matey, we need some info from the server you are migrating FROM")
-        lib.servers.interactively_add_conf_entry(serverFrom)
+    t_user = lib.webfaction.get_user(t_server)
+    t_app_dir = "/home/{}/webapps/{}".format(t_user, t_app)
+    t_flags = "-zxvf" if vars.verbose else "-zxf"
 
-    if not vars.servers.exists(serverTo):
-        print("Hello {}, we need some info for the server you are migrating TO".format(getpass.getuser()))
-        lib.servers.interactively_add_conf_entry(serverTo)
+    search = from_site
+    replace = to_site
 
-    output_file_dir = vars.tmp_dir / "migrations"
-    if not output_file_dir.is_dir():
-        output_file_dir.mkdir()
-    output_file = output_file_dir / vars.servers[serverFrom]["ftp-username"]+"to"+vars.servers[serverTo]["ftp-username"]
+    print("when prompted use the passwords\nFor {t[ssh-username]}@{t[host]} use {t[ssh-password]}\nFor {f[ssh-username]}@{f[host]} use {f[ssh-password]}".format(**locals()))
 
-    migrate_db(vars.servers[serverFrom], vars.servers[serverTo], output_file)
-    migrate_files(user, host, backup_path, output_file)
+    print("migrating database")
+    cmd = 'ssh {t[ssh-username]}@{t[host]} "(mysql -u {t_db_user} -p{t_db_password} {t_db_name} | sed s@{search}@{replace}@g )"' +\
+    ' < ssh {f[ssh-username]}@{f[host]} "mysqldump -u {f_db_user} -p{f_db_password} {f_db_name}" '
+    cmd = cmd.format(**locals())
 
-def migrateOld(serverFrom, output_file):
-    """ migrate a website to a Webfaction server"""
-    raise NotImplementedError()
-    global wf, wf_id
+    if vars.verbose:
+        print("executing command " + cmd)
+    #subprocess.run(cmd)
 
-    print("Hello matey, we need some info from the server you are migrating FROM")
-    host = input("Enter the host you are migrating from (example web353.webfaction.com): ")
-    ssh_user = input("Enter the ssh username: ")
-    ssh_password = input("Enter the ssh password: ")
-    backup_path = input("Enter the path to the folder you would like to backup")
-    #same = input("Are the ftp credentials the same as the ssh credentials [yes/No]: "):
-    if False and same.lower().startswith("n"):
-        db = input("Enter the database name: ")
-        db_user = input("Enter the database username: ")
-        db_password = input("Enter the database password: ")
-    else:
-        db, db_user, db_password = db_passwords.find2(host, ssh_user, ssh_password, backup_path)
+    print("migrating files")
+    cmd = 'ssh {t[ssh-username]}@{t[host]} "gzip -d | (cd {t_app_dir} && tar {t_flags} -)"' +\
+    ' < ssh {f[ssh-username]}@{f[host]} "tar {f_flags} - {f_app_dir} -C {f_app_dir} . | gzip -c"'
+    cmd = cmd.format(**locals())
 
-    output_file = input("Enter the location you would like to save the backup to")
-
-    print("\n Now for the server you are copying the files to")
-    serverTo = input("I just need to know the name of this server. Leave empty to add a new server entry")
-    if not serverTo:
-        serverTo = lib.servers.interactively_add_conf_entry()
-
-
-    wf, wf_id = lib.webfaction.connect(server)
-    migrate_db(host, ssh_user, ssh_password, db, db_user, db_password, output_file)
-    migrate_files(user, host, backup_path, output_file)
+    if vars.verbose:
+        print("executing command " + cmd)
+    #subprocess.run(cmd)

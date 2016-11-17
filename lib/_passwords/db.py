@@ -33,7 +33,7 @@ def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
     If this is a webfaction server wp_config_folder can also be a webapp
     returns the tuple (name, host, user, password)"""
     if vars.verbose:
-        print("using the ftp credentials host={} user={} password={}".format(ftp_host, ftp_user, ftp_password))
+        print("retreiving db info using the ftp credentials host={} user={} password={}".format(ftp_host, ftp_user, ftp_password))
 
     with ftplib.FTP(ftp_host) as ftp:
         ftp.login(ftp_user, ftp_password)
@@ -55,7 +55,7 @@ def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
                 except:
                     pass
 
-                assert(vars.servers.exists(wp_config_folder))
+                assert(wp_config_folder in vars.servers)
                 wf, wf_id = lib.webfaction.connect(wp_config_folder) #Todo need to be able to map the host to the webfaction conf entry
                 apps = wf.list_apps(wf_id)
                 apps = [app["name"] for app in apps]
@@ -71,7 +71,18 @@ def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
             data += block.decode()
 
         save_file = str(vars.tmp_dir / "ftp_data")
-        ftp.retrbinary("RETR " + "wp-config.php", callback)
+        try:
+            ftp.retrbinary("RETR " + "wp-config.php", callback)
+        except ftplib.error_perm as err:
+            if str(err) == "550 Failed to open file.":
+                try:
+                    pwd = ftp.pwd()
+                except:
+                    raise(err) from None
+                raise SmashException("Failed to retreive the wp-config.php file from {} using FTP".format(pwd))
+            else:
+                raise(err) from None
+
 
         name = get_define_value(data, "DB_NAME")
         user = get_define_value(data, "DB_USER")

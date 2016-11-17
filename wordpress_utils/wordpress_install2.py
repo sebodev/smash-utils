@@ -76,10 +76,11 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
         wf.create_domain(wf_id, subdomains[0], "www")
 
     if app_name in webfaction.get_webapps(server):
-        resp = input("Hmm, The Webfaction app {} already exists. Do you want to delete the website, app, and database [yes/No]".format(app_name))
+        site_name = webfaction.get_website(server, app_name)
+        db_name, _, db_user, _ = passwords.db(server, app_name)
+        resp = input("Hmm, The Webfaction app {} already exists. Do you want to delete the website {}, the app {}, and the database {} [yes/No]".format(app_name, site_name, app_name, db_name))
         if resp.lower().startswith("y"):
             #raise SmashException("Webapp already exists")
-            db_name, _, db_user, _ = passwords.db(server, app_name)
             if vars.verbose:
                 print("deleting website with the name={} and ip address={}".format(site_name, ip))
             try:
@@ -91,7 +92,7 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
                 #but I don't expect we'll be needing to recreate websites that often
                 raise SmashException("Failed to delete {}. You'll have to manually delete it".format(site_name))
             wf.delete_app(wf_id, app_name)
-            wf.delete_db(wf_id, dn_name, "mysql")
+            wf.delete_db(wf_id, db_name, "mysql")
             wf.delete_db_user(wf_id, db_user, "mysql")
             time.sleep(1)
             res = wf.create_app(wf_id, app_name, app_type)
@@ -168,10 +169,10 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
             chars = string.ascii_letters + string.digits + string.punctuation
             passwd_size = 16
             password = ''.join((random.SystemRandom().choice(chars)) for i in range(passwd_size))
-            print("the wordpress credential are now:")
-            print("url: http://" + site + "/wp-admin")
-            print("username: sitekeeper")
-            print("password: " + password)
+            print("\nThe wordpress credential are now:")
+            print("Login Url: http://" + site + "/wp-admin")
+            print("Username: sitekeeper")
+            print("Password: " + password)
             return password
         driver.find_element_by_id("user_login").clear()
         driver.find_element_by_id("user_login").send_keys("sitekeeper")
@@ -237,7 +238,7 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
         driver.find_element_by_id("submit").click()
 
         driver.quit()
-        print('\nAll done. You know have a fancy schnazzy site to play around with.\n Just don\'t forget your username is sitekeeper and your password is %s' % password)
+        print('\nAll done. You know have a fancy schnazzy site to play around with.\n')
 
     except KeyboardInterrupt:
         driver.quit()

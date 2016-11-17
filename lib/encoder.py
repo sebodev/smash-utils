@@ -34,34 +34,60 @@ def encrypt(password):
 
         return encoded2
     else:
-        raise Exception("Must be on Windows to encode passwords")
+        drive_dir = vars.google_drive_smash_utils_dir
+        key_file = drive_dir / "lastpass-key-part1"
+
+        if not key_file.is_file():
+            if not drive_dir.is_dir():
+                drive_dir.mkdir()
+
+            key = lib.password_creator.create(20)
+            key_file.write_text(key)
+        else:
+            key = key_file.read_text()
+
+        encoded = _encode(key, password).hex()
+
+        return encoded
 
 def unencrypt(password):
-    """retrieves a password saved with save_password
-    only works on windows"""
+    """retrieves a password saved with save_password"""
 
     if os.name != 'nt':
-        raise Exception("Must be on Windows to decode passwords")
 
-    try:
-        import win32crypt
-    except:
-        raise SmashException("Python Extensions not installed")
+        try:
+            import win32crypt
+        except:
+            raise SmashException("Python Extensions not installed")
 
-    try:
-        key_file = vars.google_drive_smash_utils_dir / "lastpass-key-part1"
-        key = key_file.read_text()
-    except FileNotFoundError:
-        raise SmashException("Could not find the LastPass Password decryption Key in Google Drive. Run smash-utils with the --new-credentials flag to regenerate the key")
+        try:
+            key_file = vars.google_drive_smash_utils_dir / "lastpass-key-part1"
+            key = key_file.read_text()
+        except FileNotFoundError:
+            raise SmashException("Could not find the LastPass Password decryption Key in Google Drive. Run smash-utils with the --new-credentials flag to regenerate the key")
 
-    if not key:
-        raise SmashException("Unable to retrieve decryption key from Google Drive")
+        if not key:
+            raise SmashException("Unable to retrieve decryption key from Google Drive")
 
-    password = _decode(key, bytes.fromhex(password).decode())
+        password = _decode(key, bytes.fromhex(password).decode())
 
-    password = win32crypt.CryptUnprotectData(bytes.fromhex(password))[1]
+        password = win32crypt.CryptUnprotectData(bytes.fromhex(password))[1]
 
-    return password.decode()
+        return password.decode()
+
+    else:
+        try:
+            key_file = vars.google_drive_smash_utils_dir / "lastpass-key-part1"
+            key = key_file.read_text()
+        except FileNotFoundError:
+            raise SmashException("Could not find the LastPass Password decryption Key in Google Drive. Run smash-utils with the --new-credentials flag to regenerate the key")
+
+        if not key:
+            raise SmashException("Unable to retrieve decryption key from Google Drive")
+
+        password = _decode(key, bytes.fromhex(password).decode())
+
+        return password.decode()
 
 
 def _encode(key, clear):

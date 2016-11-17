@@ -165,9 +165,6 @@ class ServersDict(dict):
         else:
             raise KeyError("couldn't find the server entry '{}'".format(name))
 
-    def exists(self, server_entry):
-        return bool(self.__getitem__(server_entry))
-
 def pull_conf_entries():
     """Read whatever is currently in the servers.txt file and save the results in the vars.servers dictionary"""
     servers = ServersDict()

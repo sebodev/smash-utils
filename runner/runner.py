@@ -46,7 +46,17 @@ elif "--monthly" in sys.argv:
 
 elif "--lockouts" in sys.argv:
     from maintenance_utils import security_info
-    _, server, app_name = domains.info(args.lockouts[0])
+
+    try:
+        domain = args.lockouts
+    except IndexError:
+        domain = None
+
+    while not domain:
+        domain = input("Enter a website: ")
+
+    _, server, app_name = domains.info(domain)
+    assert server and app_name
     security_info.main(server, app_name)
 
 elif "--backup" in sys.argv:
@@ -64,6 +74,12 @@ elif "--backup" in sys.argv:
         local_dir = args.backup[2]
     except IndexError:
         local_dir = None
+
+    _, s, a = domains.info(server)
+    if s and a:
+        server = s
+        if not dir_on_server:
+            dir_on_server = a
 
     migrate.backup(server, dir_on_server, local_dir)
 
@@ -184,9 +200,9 @@ elif "--db" in sys.argv:
     db_passwords.main(server, app_name)
 
 elif "--update" in sys.argv:
-    import subprocess
-    print('cd %s & git pull' % vars.script_dir)
-    subprocess.call( 'cd %s && git pull' % vars.script_dir )
+    import os, subprocess
+    os.chdir(vars.script_dir)
+    subprocess.call("git pull")
 
 elif "--dns" in sys.argv:
     from maintenance_utils import dns
@@ -225,6 +241,10 @@ elif ("--md5" in sys.argv or "--hash" in sys.argv):
         args.md5 == input('Enter a password or leave empty for a random one: ')
     md5.main(args.md5)
 
+elif ("--del" in sys.argv or "--delete" in sys.argv):
+    from wordpress_utils import delete_site
+    delete_site.main(args.delete)
+    
 elif ("--wp" in sys.argv or "--wordpress" in sys.argv):
     from wordpress_utils import wordpress_install2
 

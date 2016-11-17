@@ -4,12 +4,14 @@ import lib.servers
 import lib.domains
 from runner import vars
 from pathlib import Path
+from lib import webfaction
 
 def main(server_or_website):
     server = lib.servers.get(server_or_website, create_if_needed=False)
+    app = None
     if not server:
-        server_name = server_or_website = lib.domains.info(server_or_website)[1]
-        server = lib.servers.get(server_name)
+        server, server_name, app = lib.domains.info(server_or_website)
+        server_or_website = server_name
     if os.name == "nt":
         cmd = "putty -ssh {}@{} -pw {}".format(server["ssh-username"], server["host"], server["ssh-password"])
 
@@ -22,7 +24,11 @@ def main(server_or_website):
             cmd2 = "ssh -q -o ConnectTimeout=1 {} exit".format(server_or_website)
             try:
                 subprocess.check_output(cmd2)
-                cmd = "ssh {}".format(server_or_website)
+                if app and webfaction.is_webfaction_server(server_or_website):
+                    app_dir = webfaction.get_app_dir(server_or_website, app)
+                    cmd = 'ssh -t {} "cd {} ; bash"'.format(server_or_website, app_dir)
+                else:
+                    cmd = "ssh {}".format(server_or_website)
             except subprocess.CalledProcessError:
                 pass
     else:

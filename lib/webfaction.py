@@ -1,11 +1,11 @@
 import xmlrpc.client
-import lib.errors
-from lib import lastpass
 import configparser
-from runner import vars
-from lib import dns
 
-from . import servers
+from runner import vars
+import lib.errors
+from lib import dns
+from lib import domains
+from lib import servers
 
 #current_account will be a dictionary containing extra info about the last account connected to with the connect() function
 current_account = None
@@ -28,7 +28,7 @@ def connect(server):
 
     webfaction, wf_id = connect2(username, password)
 
-    xmlrpc_cache[server] = webfaction, wf_id
+    #xmlrpc_cache[server] = webfaction, wf_id #Caching the connections will sometimes cause problems. I'm thinking webfaction has a very short amount of time that it allows a connection to stay alive.
     account_cache[server] = current_account
 
     return webfaction, wf_id
@@ -90,17 +90,13 @@ def get_server(domain):
 
     #recreate the domains associated with each server if the --new-credentials flag is passed in
     if vars.new_credentials:
-        for server_name, server in vars.servers.items():
-            ds = get_domains(server_name)
-            if ds:
-                server["domains"] = ds
-        servers.save_servers()
+        domains.refresh_domains_cache()
 
     #method1
     for server_name, server in vars.servers.items():
         ds = server.get("domains")
         if ds:
-            for d in ds:
+            for d in eval(ds):
                 if d == domain:
                     return server_name
 
@@ -114,6 +110,20 @@ def get_server(domain):
                     return server
             except lib.errors.LoginError:
                 pass
+
+def get_website(server, domain):
+    """returns a list of Webfaction names associated with a domain
+    Webfaction allows two domains to be associated with a website if one of them is the https version"""
+    ret = []
+    wf, wf_id = connect(server)
+    sites = wf.list_websites(wf_id)
+    for site in sites:
+        if domain in site["subdomains"]:
+            ret.append(site["name"])
+    return ret
+
+def get_app_dir(server, app):
+    return "/home/{}/webapps/{}".format(get_user(server), app)
 
 def get_user(server):
     """grabs the name of the webfaction user"""

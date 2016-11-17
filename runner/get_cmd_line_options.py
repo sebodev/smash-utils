@@ -36,6 +36,7 @@ passwords = parser.add_argument_group('Find a password')
 other = parser.add_argument_group('Other options')
 
 wordpress.add_argument("-_", "--_s-project", default="", help="Create a new _s project")
+wordpress.add_argument("--delete", "--del", nargs="?", metavar="website", help="deletes a wordpress site")
 wordpress.add_argument("--download", "--down", nargs="*", metavar=("website", "theme-or-plugin"), default="", help="Downloads a theme. Also attempts to run npm install and to make the theme work with the atom editor's remote-sync plugin")
 wordpress.add_argument("-n", "--new", help="Runs through an interactive session to help you get things setup.", action="store_true")
 wordpress.add_argument("-w", "--watch", nargs="*", metavar=("project", "theme"), default="", help="runs the gulp command. If you are in any folder within a gulp it still works, and if you are not within a gulp project folder it will prompt you for one. Project will be an app name")
@@ -49,7 +50,7 @@ servers.add_argument("--server", "--servers", nargs="?", default=None, metavar="
 
 maintenance.add_argument("--dns", nargs="*", default="", const=None, metavar=("domain.com", "output.txt"), help="Does a DNS lookup and optionally saves the results to a text file")
 maintenance.add_argument("--hosts", action="store_true", help="Opens the hosts file in notepad or vi")
-maintenance.add_argument("--lockouts", metavar="website", help="Checks the number of ithemes security lockouts logged in a database")
+maintenance.add_argument("--lockouts", nargs="?", metavar="website", help="Checks the number of ithemes security lockouts logged in a database")
 maintenance.add_argument("--md5", nargs="?", default="", metavar="password", help="takes a password and outputs the md5 hash")
 maintenance.add_argument("--monthly", nargs="*", default="", metavar=("website"), help="Performs part of the initial setup for a new WordPress Warranty client.")
 maintenance.add_argument("--performance", nargs="+", metavar=("domain", "output file"), help="Runs a webpagetest.org performance test. Pass in a location to store the CSV results")
