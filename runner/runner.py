@@ -206,7 +206,7 @@ elif "--db" in sys.argv:
 elif "--update" in sys.argv:
     import os, subprocess
     os.chdir(str(vars.script_dir))
-    subprocess.call("git pull")
+    subprocess.call("git pull", shell=True)
 
 elif "--dns" in sys.argv:
     from maintenance_utils import dns
