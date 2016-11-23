@@ -9,6 +9,10 @@ if "--setup" in sys.argv:
     from runner import setup
     setup.main()
 
+elif "--temp" in sys.argv:
+    #This is just a place for me to temporarily test stuff
+    pass
+
 elif "--new" in sys.argv:
     from wordpress_utils import new
     option = new.prompt_for_task(tasks_to_run)

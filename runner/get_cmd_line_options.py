@@ -70,6 +70,7 @@ other.add_argument("--new-credentials", help="whenever this script uses credenti
 other.add_argument("--setup", "--install", action="store_true", help="Runs through the initial setup of this script")
 other.add_argument("--update", help="updates this script", action="store_true")
 other.add_argument("-v", "--verbose", help="", action="store_true")
+other.add_argument("--temp", help=argparse.SUPPRESS, action="store_true")
 
 if len(sys.argv) == 1:
     parser.print_help()
