@@ -53,7 +53,7 @@ def encrypt(password):
 def unencrypt(password):
     """retrieves a password saved with save_password"""
 
-    if os.name != 'nt':
+    if os.name == 'nt':
 
         try:
             import win32crypt

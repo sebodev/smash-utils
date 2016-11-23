@@ -30,9 +30,15 @@ except ImportError:
       try:
         import requests
       except ImportError:
-        subprocess.run("pip install requests")
+        if os.name == "nt":
+            subprocess.run("pip install requests")
+        else:
+            subprocess.run("pip3 install requests")
       try:
-        ret = subprocess.check_output("pip install pyCrypto --upgrade", shell=True)
+        if os.name == "nt":
+            ret = subprocess.check_output("pip install pyCrypto --upgrade", shell=True)
+        else:
+            ret = subprocess.check_output("pip3 install pyCrypto --upgrade", shell=True)
       except subprocess.CalledProcessError:
         if os.name == "nt":
           if platform.architecture()[0] == "64bit":
@@ -54,8 +60,12 @@ except ImportError:
   except ImportError:
     if "--setup" in sys.argv:
       import subprocess
-      subprocess.check_output("pip install httplib2 --upgrade") #this line may not be needed
-      subprocess.run("pip install --upgrade google-api-python-client")
+      if os.name == "nt":
+          subprocess.check_output("pip install httplib2 --upgrade") #this line may not be needed
+          subprocess.run("pip install --upgrade google-api-python-client")
+      else:
+          subprocess.check_output("pip3 install httplib2 --upgrade") #this line may not be needed
+          subprocess.run("pip3 install --upgrade google-api-python-client")
       import runner.vars
     else:
       raise

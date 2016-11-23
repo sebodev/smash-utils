@@ -244,7 +244,7 @@ elif ("--md5" in sys.argv or "--hash" in sys.argv):
 elif ("--del" in sys.argv or "--delete" in sys.argv):
     from wordpress_utils import delete_site
     delete_site.main(args.delete)
-    
+
 elif ("--wp" in sys.argv or "--wordpress" in sys.argv):
     from wordpress_utils import wordpress_install2
 
@@ -279,16 +279,19 @@ elif ("--down" in sys.argv or "--download" in sys.argv):
     from wordpress_utils import download_project
 
     try:
-        site = args[0]
+        site = args.download[0]
     except IndexError:
         site = None
 
     try:
-        theme = args[1]
+        theme = args.download[1]
     except IndexError:
         theme = None
 
-    download_project.main(ste, theme)
+    while not site:
+        site = input("Enter a website: ")
+
+    download_project.main(site, theme)
 
 elif ("-w" in sys.argv or "--watch" in sys.argv):
     from wordpress_utils import watch

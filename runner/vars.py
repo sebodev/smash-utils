@@ -26,7 +26,7 @@ def save_sebo_conf_vars():
     #save google drive folders
     google_drive_root_dir = Path( sebo_conf.get('locations', 'google_drive', fallback="") )
     google_drive_smash_utils_dir = google_drive_root_dir / "smash-utils"
-    google_drive_maintenance_dir = google_drive_root_dir / "Sebo Dev" / "WordPress Warranty & Maintanence"
+    google_drive_maintenance_dir = google_drive_root_dir / "SiteSmash - Company Docs" / "Site Care"
 
     storage_dir = Path(sebo_conf.get('locations', 'stored_data', fallback=storage_dir))
 

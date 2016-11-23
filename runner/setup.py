@@ -33,7 +33,7 @@ def save_personal_info():
     else:
         name = name_guess
 
-    email_guess = name.lower() + "@sebodev.com"
+    email_guess = name.lower() + "@sitesmash.com"
     email = input("Is your email {}: [Yes/no]".format(email_guess))
     if email.lower().startswith("n"):
         email = input("What is your email: ")
@@ -118,6 +118,7 @@ def main():
         print()
         print("type 'dependencies' to install the dependencies")
         print("type 'config' to change the config files")
+        print("type 'rerun' to re-run everythin")
         print()
         the_input = input(": ").strip("'").lower()
 
@@ -125,6 +126,11 @@ def main():
         if the_input.startswith("d"):
             install_dependencies()
         if the_input.startswith("c"):
+            save_personal_info()
+            setup_servers_conf()
+            save_locations()
+        if the_input.startswith("r"):
+            install_dependencies()
             save_personal_info()
             setup_servers_conf()
             save_locations()
