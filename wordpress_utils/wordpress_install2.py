@@ -13,13 +13,13 @@ from lib.errors import SmashException
 from lib import domains
 from lib import passwords
 
-CURRENT_WORDPRESS_VERSION = "wordpress_461"
+CURRENT_WORDPRESS_VERSION = "wordpress-4.6.1"
 
 #app_type can also be static_php70
 def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
 
     while not website:
-        website = input("Enter the site name (example cdc.sebodev.com): ")
+        website = input("Enter the site name (example cdc.sitesmash.com): ")
 
     if "sebodev.com" in website:
         server = "sebodev"
@@ -77,7 +77,10 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
 
     if app_name in webfaction.get_webapps(server):
         site_name = webfaction.get_website(server, app_name)
-        db_name, _, db_user, _ = passwords.db(server, app_name)
+        try:
+            db_name, _, db_user, _ = passwords.db(server, app_name)
+        except SmashException:
+            raise Exception("application {} already exists, and does not appear to have a wordpress installation in it. Unable to proceed. Remove the app with the --delete command, and then re-run this command".format(app_name))
         resp = input("Hmm, The Webfaction app {} already exists. Do you want to delete the website {}, the app {}, and the database {} [yes/No]".format(app_name, site_name, app_name, db_name))
         if resp.lower().startswith("y"):
             #raise SmashException("Webapp already exists")

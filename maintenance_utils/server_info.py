@@ -39,6 +39,7 @@ def main(domain_or_server):
 
 def prompt_add_server(server):
     print()
+    return #use the --edit-website command instead
     resp = input("Would you like to add/change the server entry for {} [yes/No]".format(server))
     if resp.startswith("y"):
         lib.servers.interactively_add_conf_entry(server)

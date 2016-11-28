@@ -18,6 +18,21 @@ elif "--new" in sys.argv:
     option = new.prompt_for_task(tasks_to_run)
     sys.argv.append(option)
 
+elif "--edit-site" in sys.argv or "--edit-website" in sys.argv:
+    #Todo need to implement an actual way of editing website entries
+    import subprocess
+    subprocess.run("vi {}".format(vars.servers_conf_loc), shell=True)
+
+elif "--add-site" in sys.argv or "--add-website" in sys.argv:
+    from maintenance_utils import add_website
+    add_website.main(args.add_site)
+
+elif "--site" in sys.argv or "--websites" in sys.argv:
+    from maintenance_utils import server_info
+    server_info.main(args.site)
+    from maintenance_utils import dns
+    dns.main(args.site)
+
 elif "--server" in sys.argv or "--servers" in sys.argv:
     from maintenance_utils import server_info
     server_info.main(args.server)

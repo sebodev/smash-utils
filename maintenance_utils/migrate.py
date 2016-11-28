@@ -272,8 +272,9 @@ def migrate(from_site, to_site):
     print("when prompted use the passwords\nFor {t[ssh-username]}@{t[host]} use {t[ssh-password]}\nFor {f[ssh-username]}@{f[host]} use {f[ssh-password]}".format(**locals()))
 
     print("migrating database")
-    cmd = 'ssh {t[ssh-username]}@{t[host]} "(mysql -u {t_db_user} -p{t_db_password} {t_db_name} | sed s@{search}@{replace}@g )"' +\
-    ' < ssh {f[ssh-username]}@{f[host]} "mysqldump -u {f_db_user} -p{f_db_password} {f_db_name}" '
+    cmd = 'ssh {f[ssh-username]}@{f[host]} "mysqldump {f_db_name} -u{f_db_user} -p{f_db_password} | mysql -h{t[host]} -u{t_db_user} -p{t_db_password}"'
+    #cmd = 'ssh {t[ssh-username]}@{t[host]} "(mysql -u {t_db_user} -p{t_db_password} {t_db_name} | sed s@{search}@{replace}@g )"' +\
+    #' < ssh {f[ssh-username]}@{f[host]} "mysqldump -u {f_db_user} -p{f_db_password} {f_db_name}" '
     cmd = cmd.format(**locals())
 
     if vars.verbose:
@@ -281,8 +282,10 @@ def migrate(from_site, to_site):
     #subprocess.run(cmd)
 
     print("migrating files")
-    cmd = 'ssh {t[ssh-username]}@{t[host]} "gzip -d | (cd {t_app_dir} && tar {t_flags} -)"' +\
-    ' < ssh {f[ssh-username]}@{f[host]} "tar {f_flags} - {f_app_dir} -C {f_app_dir} . | gzip -c"'
+    print("when prompted use the password {t[ssh-password]}".format(**locals()))
+    cmd = 'ssh -t {t[ssh-username]}@{t[host]} "scp -r {f_app_dir}/* {t[ssh-username]}@{t[host]}:{t_app_dir}"'
+    #cmd = 'ssh {t[ssh-username]}@{t[host]} "gzip -d | (cd {t_app_dir} && tar {t_flags} -)"' +\
+    #' < ssh {f[ssh-username]}@{f[host]} "tar {f_flags} - {f_app_dir} -C {f_app_dir} . | gzip -c"'
     cmd = cmd.format(**locals())
 
     if vars.verbose:

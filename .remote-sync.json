@@ -1,0 +1,12 @@
+{
+  "uploadOnSave": false,
+  "useAtomicWrites": false,
+  "deleteLocal": false,
+  "hostname": "web353.webfaction.com",
+  "ignore": [
+    ".remote-sync.json",
+    ".git/**"
+  ],
+  "watch": [],
+  "transport": "scp"
+}

@@ -64,19 +64,18 @@ current_project = project_info.get_project_from_dir(".")
 verbose = args.verbose
 new_credentials = args.new_credentials
 
+#Need to test if I can get rid of this section now
 def change_current_project(project, new_theme=None):
     '''deprecated. Use project_info.info() instead '''
     global current_project, project_dir, webfaction_theme_dir, theme, servers_theme_dir
     if not project:
         project = current_project
     info = project_info.info(project, theme=new_theme, user="sebodev")
-
     theme = info["theme"]
     current_project = info["project"]
     project_dir = Path(info["project_dir"])
     webfaction_theme_dir = Path(info["webfaction_theme_dir"])
     servers_theme_dir = webfaction_theme_dir
-
 if current_project:
     change_current_project(current_project)
 

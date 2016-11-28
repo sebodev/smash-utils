@@ -6,7 +6,7 @@ from pathlib import Path
 
 def main(domain, output_file=None):
     while not domain:
-        domain = args.dns = input('Enter a domain (example google.com): ')
+        domain = input('Enter a domain (example google.com): ')
 
     if output_file:
         output_file = Path(output_file)

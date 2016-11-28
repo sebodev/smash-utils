@@ -10,6 +10,10 @@ from lib.errors import SmashException
 class AlreadyExpired(SmashException):
     pass
 
+def add(domain_or_server):
+    #letsencrypt_webfaction --letsencrypt_account_email hi@sitesmash.com --domains mojaworks.com,www.mojaworks.com --public /home/moja/webapps/moja/ --username moja --password y3ozq3E3IcVZ
+    pass
+    
 def main(domain_or_server=None):
     """ checks when a domain expires.
     domain can also be a Webfaction server entry."""

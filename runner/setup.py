@@ -27,7 +27,7 @@ def setup_servers_conf():
 
 def save_personal_info():
     name_guess = getpass.getuser()
-    name = input("Is your name {}: [Yes/no]".format(name_guess))
+    name = input("Is your first name {}: [Yes/no]".format(name_guess))
     if name.lower().startswith("n"):
         name = input("What is your name: ")
     else:
@@ -130,10 +130,10 @@ def main():
             setup_servers_conf()
             save_locations()
         if the_input.startswith("r"):
-            install_dependencies()
             save_personal_info()
             setup_servers_conf()
             save_locations()
+            install_dependencies()
     else:
         print("Hola! Let's get things started")
         print("First off, let's go through some yes/no questions\n")

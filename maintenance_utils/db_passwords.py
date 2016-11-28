@@ -1,14 +1,9 @@
-from runneimport lib.passwordsr import vars
+from runner import vars
 import lib.passwords
 import lib.errors
 
 def main(server, app_name):
     try:
-        vars.servers[server]
-
-        if not app_name:
-            app_name = server.replace("http://", "").replace("https://", "").replace(".com", "").replace(".org", "")
-
         name, host, user, passwd = lib.passwords.db(server, app_name)
 
         print("\nDatabase name: ", name)

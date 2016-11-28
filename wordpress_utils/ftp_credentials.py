@@ -27,9 +27,9 @@ def setup_remote_sync(server):
         ".ftppass"
       ],
       "transport": "scp",
-      "target": """ + '"' + str(vars.servers_theme_dir) + '"' + """,
-      "username": """ + '"' + ssh_username + '"' + """,
-      "password": """ + '"' + ssh_password + '"' + """
+      "target": """ + '"' + str(vars.servers_theme_dir).replace("\\", "\\\\") + '"' + """,
+      "username": """ + '"' + ssh_username.replace("\\", "\\\\") + '"' + """,
+      "password": """ + '"' + ssh_password.replace("\\", "\\\\") + '"' + """
     }
     """
 
