@@ -1,4 +1,4 @@
-import socket
+import socket, xmlrpc
 
 from runner import vars
 from lib import domains
@@ -22,6 +22,7 @@ def main(website):
         wf, wf_id = webfaction.connect(server)
 
         if resp == "a":
+            print("Current apps are: ", ", ".join(webfaction.get_webapps(server)))
             app = input("Enter an app to delete: ")
             wf.delete_app(wf_id, app)
         elif resp == "d":
@@ -86,7 +87,17 @@ def main(website):
             wf, wf_id = webfaction.connect(server)
 
             if domain:
-                wf.delete_domain(wf_id, domain)
+                try:
+                    wf.delete_domain(wf_id, domain)
+                except xmlrpc.client.Fault as err:
+                    if domain.count(".") > 1:
+                        subdomain = domain[: domain.find(".")]
+                        domain = domain[domain.find(".")+1 :]
+                        if vars.verbose:
+                            print("deleting sudomain {subdomain} on domain {domain}".format(**locals()))
+                        wf.delete_domain(wf_id, domain, subdomain)
+                    else:
+                        raise err
             if site_name:
                 wf.delete_website(wf_id, site_name, ip)
             if app:

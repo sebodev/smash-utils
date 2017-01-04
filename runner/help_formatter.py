@@ -21,26 +21,11 @@ class Formatter(argparse.HelpFormatter):
                 args_string = " ".join(action.metavar)
         comma_append = ", " if len(action.option_strings)>1 else " "
 
-        # ret = ", ".join(action.option_strings)
-        # if args_string:
-        #     ret += "\n" + " " * (self._current_indent+1) + args_string
-        # return ret
-        #
-        # ret = ""
-        # first=True
-        # for op in action.option_strings:
-        #     indent = self._current_indent
-        #     if first:
-        #         indent = 0
-        #         first = False
-        #     ret += " " * indent + op + comma_append + args_string + "\n"
-        # return ret.rstrip()
-
         return comma_append.join(action.option_strings) + comma_append + args_string
 
     def add_arguments(self, actions):
         #changed to not display help for other actions if an action is passed in to --help
-        #and to add the preceding --  or - to an action passed in without it
+        #and to add the preceding -- or - to an action when running the command `smsah --help action`
         if len(sys.argv)>2:
             try:
                 sys.argv.remove("--help")

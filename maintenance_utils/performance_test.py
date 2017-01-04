@@ -40,9 +40,9 @@ def run(domain, save_file_loc=None, insight_sav_loc=None):
         csv.rstrip(",")
         csv += "\n"
         for val in result.values():
-            csv += val + ","
+            csv += str(val) + ","
 
-        insight_sav_loc.write_bytes(csv)
+        insight_sav_loc.write_bytes(csv.encode("utf-8"))
 
     print("Google insight score: ", rating, "/100")
 

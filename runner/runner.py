@@ -5,29 +5,67 @@ from runner.get_cmd_line_options import args
 from runner import vars #oops I just overwrote a built in function. To access it use `import builtins; builtins.vars`
 from lib import domains
 
+
 if "--setup" in sys.argv:
     from runner import setup
     setup.main()
 
 elif "--temp" in sys.argv:
     #This is just a place for me to temporarily test stuff
-    pass
+    for k, v in vars.servers["universal"].items():
+        print(k, v, type(v))
+
+if "--wp-cli" in sys.argv:
+    from lib import wp_cli
+
+    try:
+        site = args.wp_cli[0]
+    except:
+        site = None
+
+    try:
+        cmd = args.wp_cli[1]
+    except:
+        cmd = None
+
+    while not site:
+        site = input("Enter a website: ")
+    while not cmd:
+        cmd = input("Enter a command to run: ")
+
+    _, server, app = domains.info(site)
+
+    if not app:
+        app = input("Which app is this for: ")
+
+    wp_cli.run(server, app, cmd)
 
 elif "--new" in sys.argv:
     from wordpress_utils import new
     option = new.prompt_for_task(tasks_to_run)
     sys.argv.append(option)
 
-elif "--edit-site" in sys.argv or "--edit-website" in sys.argv:
+elif "--edit-sites" in sys.argv or "--edit-websites" in sys.argv:
     #Todo need to implement an actual way of editing website entries
     import subprocess
     subprocess.run("vi {}".format(vars.servers_conf_loc), shell=True)
 
 elif "--add-site" in sys.argv or "--add-website" in sys.argv:
     from maintenance_utils import add_website
-    add_website.main(args.add_site)
 
-elif "--site" in sys.argv or "--websites" in sys.argv:
+    try:
+        search_method = args.add_site[0]
+    except:
+        search_method = None
+
+    try:
+        search_term = args.add_site[1]
+    except:
+        search_term = None
+
+    add_website.main(search_method, search_term)
+
+elif "--site" in sys.argv or "--website" in sys.argv or "--sites" in sys.argv or "--websites" in sys.argv:
     from maintenance_utils import server_info
     server_info.main(args.site)
     from maintenance_utils import dns
@@ -43,7 +81,24 @@ elif "--ftp" in sys.argv:
 
 elif "--ssh" in sys.argv:
     from maintenance_utils import ssh_session
-    ssh_session.main(args.ssh)
+
+    try:
+        site = args.ssh[0]
+    except:
+        site = input("Enter a website to SSH into: ")
+
+    try:
+        cmd = args.ssh[1]
+    except:
+        cmd = None
+
+    if cmd:
+        from lib import ssh
+        from lib import domains
+        server = domains.info(site)[1]
+        ssh.run(server, cmd)
+    else:
+        ssh_session.main(site)
 
 elif "--hosts" in sys.argv:
     from maintenance_utils import edit_hosts_file
@@ -75,6 +130,7 @@ elif "--lockouts" in sys.argv:
         domain = input("Enter a website: ")
 
     _, server, app_name = domains.info(domain)
+
     assert server and app_name
     security_info.main(server, app_name)
 
@@ -94,11 +150,12 @@ elif "--backup" in sys.argv:
     except IndexError:
         local_dir = None
 
-    _, s, a = domains.info(server)
-    if s and a:
-        server = s
-        if not dir_on_server:
-            dir_on_server = a
+    if server not in vars.servers:
+        _, s, a = domains.info(server)
+        if s and a:
+            server = s
+            if not dir_on_server:
+                dir_on_server = a
 
     migrate.backup(server, dir_on_server, local_dir)
 
@@ -151,20 +208,61 @@ elif "--migrate" in sys.argv:
     from maintenance_utils import migrate
 
     try:
-        serverTo = args.migrate[0]
+        websiteFrom = args.migrate[0]
     except IndexError:
-        serverTo = None
+        websiteFrom = None
     try:
-        serverFrom = args.migrate[1]
+        websiteTo = args.migrate[1]
     except IndexError:
-        serverFrom = None
+        websiteTo = None
 
-    while not serverTo:
-        serverTo = input('Enter the server entry you would like to migrate to: ')
-    while not serverFrom:
-        serverFrom = input('Enter the server entry you are migrating from: ')
+    while not websiteFrom:
+        websiteFrom = input('Enter the website you are migrating from: ')
+    while not websiteTo:
+        websiteTo = input('Enter the website you would like to migrate to: ')
 
-    migrate.migrate(serverFrom, serverTo)
+    migrate.migrate(websiteFrom, websiteTo)
+
+elif "--db-migrate" in sys.argv:
+    from maintenance_utils import migrate
+
+    try:
+        websiteFrom = args.migrate[0]
+    except IndexError:
+        websiteFrom = None
+    try:
+        websiteTo = args.migrate[1]
+    except IndexError:
+        websiteTo = None
+
+    while not websiteFrom:
+        websiteFrom = input('Enter the website you are migrating from: ')
+    while not websiteTo:
+        websiteTo = input('Enter the website you would like to migrate to: ')
+
+    migrate.migrate(websiteFrom, websiteTo, migrate_files=False)
+
+elif "--staging" in sys.argv:
+    from maintenance_utils import migrate
+    from maintenance_utils import wordpress_install2
+
+    try:
+        websiteFrom = args.migrate[0]
+    except IndexError:
+        websiteFrom = None
+    try:
+        websiteTo = args.migrate[1]
+    except IndexError:
+        websiteTo = None
+
+    while not websiteFrom:
+        websiteFrom = input('Enter the website you are migrating from: ')
+    while not websiteTo:
+        websiteTo = input('Enter the website you would like to migrate to: ')
+
+    wordpress_install2.create(websiteTo, app_type="static")
+    #create database
+    migrate.migrate(websiteFrom, websiteTo, use_new_db=True)
 
 elif "--performance" in sys.argv:
     from maintenance_utils import performance_test
@@ -178,6 +276,13 @@ elif "--performance" in sys.argv:
 elif "--ssl" in sys.argv:
     from maintenance_utils import ssl_check
     ssl_check.main(args.ssl)
+
+elif "--add-ssl" in sys.argv or "--add-ssl-cert" in sys.argv or "--add-ssl-certificate" in sys.argv:
+    from maintenance_utils import ssl_check
+    domain = args.add_ssl
+    while not domain:
+        domain = input("Enter a domain: ")
+    ssl_check.add(domain)
 
 elif "--passwords" in sys.argv or "--pass" in sys.argv:
     from maintenance_utils import all_passwords
@@ -195,10 +300,20 @@ elif "--filezilla" in sys.argv or "--fz" in sys.argv:
 
 elif "--lastpass" in sys.argv or "--lp" in sys.argv:
     from maintenance_utils import lastpass_passwords
-    search_term = args.lastpass
+
+    try:
+        search_term = args.lastpass[0]
+    except:
+        search_term = None
+
+    try:
+        search_term2 = args.lastpass[1]
+    except:
+        search_term2 = None
+
     if not search_term:
         search_term = input('Enter your Lastpass search term: ')
-    lastpass_passwords.main(search_term)
+    lastpass_passwords.main(search_term, search_term2)
 
 elif "--chrome" in sys.argv:
     from maintenance_utils import chrome_passwords

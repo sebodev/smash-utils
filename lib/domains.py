@@ -8,36 +8,58 @@ def normalize_domain(website):
     return website.replace("http://", "").replace("https://", "").lstrip("www.").rstrip("/")
 
 def info(domain_or_server, create_if_needed=True):
-    """ Returns the tuple server_info, server, app
+    """ Returns the tuple (server_info, server, app)
     If this is not a Webfaction server, server and app will be None
     Otherwise they will be the server name and app name
     server_info will be a dictionary of credentials for the server """
     domain = normalize_domain(domain_or_server)
     server_info = server = app = None
-    if webfaction.is_webfaction_domain(domain):
+    if domain_or_server in vars.servers:
+        server = domain_or_server
+        try:
+            app = webfaction.get_webapps(server, domain)
+        except lib.errors.LoginError:
+            app = None
+        if app:
+            app = app[0]
+        if vars.verbose:
+            print("domain", domain, "maps to the server", server, "and the app", app)
+    elif webfaction.is_webfaction_domain(domain):
         server = webfaction.get_server(domain)
         if server:
-            app = webfaction.get_webapps(server, domain)
+            try:
+                app = webfaction.get_webapps(server, domain)
+            except lib.errors.LoginError:
+                app = None
             if app:
                 app = app[0]
             if vars.verbose:
-                print(domain, "maps to the server", server, "and the app", app)
+                print("domain", domain, "maps to the server", server, "and the app", app)
         elif webfaction.can_login(domain) and domain in vars.servers:
             server = domain_or_server
     else:
         for server_name, s in vars.servers.items():
             ds = s.get("domains")
             if ds:
-                for d in eval(ds):
+                for d in ds:
                     if d == domain:
                         server = server_name
-        if not server:
+        if not server: #I don't think thse two lines should be here, but I'm not sure
             server = domain_or_server
+
+    if not server and app: #see if this is a subdomain of a domain we have info about
+        parent = parent_domain(server)
+        if parent:
+            #setting create_if_needed to False. If it was passed in as True, it will still prompt if we would like to create
+            #a new server entry as soon as we finish checking the parent domain
+            info(parent, create_if_needed=False)
+
+
     if server: #this will be True unless we need to create a new server entry
         server_info = servers.get(server)
     elif create_if_needed:
         if "." not in domain:
-            raise SmashException("Whoops {} is not a valid website.".format(domain))
+            raise lib.errors.SmashException("Whoops {} is not a valid website.".format(domain))
         resp = input("No server entries exists for the domain {}. Would you like to add one now [Yes/no] ".format(domain))
         if not resp.lower().startswith("n"):
             server = servers.interactively_add_conf_entry()
@@ -56,7 +78,32 @@ def refresh_domains_cache():
     whatever was previously in the cache will remain in the cache """
     print("\nRefreshing domain info...")
     for server_name, server in vars.servers.items():
-        ds = webfaction.get_domains(server_name)
+        ds = None
+        try:
+            if server["is-webfaction-server"]:
+                ds = webfaction.get_domains(server_name)
+        except lib.errors.LoginError as err:
+            print()
+            print("!!!!! unable to login to {} !!!!!".format(server_name))
+            print()
+            raise err
         if ds:
             server["domains"] = ds
-    servers.save_servers()
+    servers.push_server_entries()
+
+def parent_domain(subdomain):
+    """ return the parent domain of a subdomain or None if no parent domains exist.
+    Does not work with TLDs that have multiple periods such as .co.uk """
+    if subdomain.count(".") > 1:
+        parent = subdomain[subdomain.find(".")+1 :]
+        return parent
+        #sub = subdomain[: subdomain.find(".")]
+
+def _get_domains_from_subdomain(domain):
+    """ Returns all possible domains based off a subdomain.
+    Example the string "a.b.c.com" will return ["b.c.com", "c.com"] """
+    subdomain = []
+    while domain.count(".") > 1:
+        subdomain = domain[: domain.find(".")]
+        domain = domain[domain.find(".")+1 :]
+        subdomains.append(subdomain)

@@ -1,3 +1,4 @@
+from pathlib import Path
 from lib.errors import CredentialsNotFound
 
 
@@ -10,6 +11,8 @@ def chrome(search_term, search_term2=None):
     return chrome_.find(search_term, search_term2)
 
 def db(server_entry, wp_folder):
+    if server_entry == "localhost":
+        return local_db(Path(wp_folder)/"wp-config.php")
     from lib._passwords import db as db_
     return db_.find(server_entry, wp_folder)
 
@@ -29,7 +32,7 @@ def ssh(server_entry):
     from lib._passwords import ssh as ssh_
     return ssh_.find(server_entry)
 
-def db_local(wp_config_file):
+def local_db(wp_config_file):
     """ like the db function, but looks at a local wp-config.php """
     from lib._passwords import db as db_
     return db_.find_local(wp_config_file)

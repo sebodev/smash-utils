@@ -22,6 +22,12 @@ def find(server_entry, root_folder):
     """ finds the database credentials returning the tuple (name, host, user, password)
     root_folder is either the path to the wp config folder relative to the folder that opens up with a new ftp session
     or root_folder can be a Webfaction webapp instead"""
+    if not root_folder:
+        if root_folder is None:
+            raise lib.errors.SmashException("cannot find db info becuase root_folder was equal to None")
+        else:
+            raise lib.errors.SmashException("cannot find db info becuase root_folder was empty")
+
     host = vars.servers[server_entry]["host"]
     user = vars.servers[server_entry]["ftp-username"]
     password = vars.servers[server_entry]["ftp-password"]
@@ -95,6 +101,7 @@ def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
         return common.credential(name, host, user, password)
 
 def find_local(wp_config_file):
+
     data = Path(wp_config_file).read_text()
 
     name = get_define_value(data, "DB_NAME")

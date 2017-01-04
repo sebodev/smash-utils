@@ -1,5 +1,5 @@
 from runner import vars
-from lib.errors import SmashException
+import lib.errors
 
 import maintenance_utils.filezilla_passwords
 import maintenance_utils.lastpass_passwords

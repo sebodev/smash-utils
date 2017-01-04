@@ -58,7 +58,7 @@ def download(server, app, theme_or_plugin):
     wf, wf_id = webfaction.connect(server)
     cmd = "ls /home/{}/webapps/{}/wp-content/plugins/".format(info["user"], app)
     plugins = wf.system(wf_id, cmd)
-    remote_dir = (os.path.join(info["webfaction_plugins_dir"],theme)) if theme in plugins else str(info["webfaction_theme_dir"])
+    remote_dir = (os.path.join(info["webfaction_plugins_dir"],theme)) if theme in plugins else str(info["webfaction_theme_dir"]) #TODO this failed with the theme ad because the them-name ad was in the plugin-name advanced-custom-fields-pro
 
     cmd = "pscp -scp -pw {} -r {}@{}:{} {}".format(info['ftp-password'], info['ftp-username'], info['host'], remote_dir, info["project_dir"])
     if vars.verbose:

@@ -13,10 +13,10 @@ from lib.errors import SmashException
 from lib import domains
 from lib import passwords
 
-CURRENT_WORDPRESS_VERSION = "wordpress-4.6.1"
+CURRENT_WORDPRESS_VERSION = "wordpress-4.7"
 
 #app_type can also be static_php70
-def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
+def create(website, server=None, app_type=CURRENT_WORDPRESS_VERSION):
 
     while not website:
         website = input("Enter the site name (example cdc.sitesmash.com): ")
@@ -26,6 +26,7 @@ def create(website, server="sebodev", app_type=CURRENT_WORDPRESS_VERSION):
     if "sitesmash.com" in website:
         server = "sitesmash"
     if not server:
+        print(website, "sitesmash.com" in website)
         server = input('Enter the server you would like to use (example sebodev): ')
 
     if app_type == "static":

@@ -46,6 +46,7 @@ def choose_drive_folder(domain):
     Prompts the user for the Google drive directory to save the data in, and then creates and returns a subdirectory for the monthly data
     Skips prompting the user if there is already a folder that matches the domain name without the .com or .org"""
     d = vars.google_drive_maintenance_dir / "clients"
+    assert d.is_dir(), "directory {} does not exist".format(d)
     d_dirs = next(os.walk(str(d)))[1]
     domain_name = domain.replace(".com", "").replace(".org", "")
     if domain_name in d_dirs:
@@ -79,7 +80,7 @@ def security(drive_dir, server, app):
     if vars.verbose:
         print("checking security info...")
     db_name, db_host, db_user, db_password = passwords.db(server, app)
-    lockouts = security_info.number_of_lockouts(servers.get(server, "ssh-username"), servers.get(server, "host"), db_user, db_password, db_name)
+    lockouts = security_info.number_of_lockouts(server, db_user, db_password, db_name)
     for k, v in lockouts.items():
         print(k, "=", str(v))
     (drive_dir/"lockout_info.txt").write_text(str(lockouts))
@@ -87,8 +88,7 @@ def security(drive_dir, server, app):
 
 def performance(drive_dir, domain):
     print()
-    if vars.verbose:
-        print("running performance test...")
+    print("running performance tests. This may take awhile...")
     pagespeed_output_file = drive_dir / "performance_test.csv"
     insights_output_file = drive_dir / "performance_insights.csv"
     performance_test.run(domain, save_file_loc=pagespeed_output_file, insight_sav_loc=insights_output_file)

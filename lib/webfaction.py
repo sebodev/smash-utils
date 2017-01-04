@@ -96,7 +96,7 @@ def get_server(domain):
     for server_name, server in vars.servers.items():
         ds = server.get("domains")
         if ds:
-            for d in eval(ds):
+            for d in ds:
                 if d == domain:
                     return server_name
 
@@ -130,6 +130,17 @@ def get_user(server):
     if server not in account_cache:
         connect(server)
     return account_cache[server]["username"]
+
+def get_webserver(server):
+    """The web server name (something like web535.webfaction.com)"""
+    if server not in account_cache:
+        connect(server)
+    return account_cache[server]["web_server"].lower() + ".webfaction.com"
+
+def get_webserver2(username, password):
+    """The web server name (something like web535.webfaction.com)"""
+    connect2(username, password)
+    return current_account["web_server"].lower() + ".webfaction.com"
 
 def can_login(server):
     if server not in vars.servers:

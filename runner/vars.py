@@ -91,4 +91,4 @@ except ImportError:
     else:
         raise
 
-lib.servers.pull_conf_entries()
+lib.servers.pull_server_entries()

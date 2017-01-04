@@ -1,11 +1,13 @@
+import configparser, os, subprocess, socket
 import xmlrpc.client
-import configparser
 
+import lib.errors
 from lib.errors import SmashException
 from lib import lastpass
-import lib.webfaction
+from lib import webfaction
 from runner import vars
 from lib import passwords
+from lib import domains
 
 def get(server, lookup=None, create_if_needed=True):
     """ returns a dictionary of info about a server entry,
@@ -23,33 +25,50 @@ def get(server, lookup=None, create_if_needed=True):
 
 def interactively_add_conf_entry(name=None):
 
-    host = input("Enter the host (example web353.webfaction.com): ")
-    ftp_user = input("Enter the FTP username: ")
-    ftp_password = input("Enter the FTP password: ")
+    is_webfaction = False
+    if name:
+        ftp_user = input("Enter the FTP username for {}: ".format(name))
+        ftp_password = input("Enter the FTP password for {}: ".format(name))
+    else:
+        ftp_user = input("Enter the FTP username: ")
+        ftp_password = input("Enter the FTP password: ")
 
-    while not name:
+    if not name:
         try:
-            lib.webfaction.connect2(ftp_username, ftp_password)
-            name = lib.webfaction.current_account["username"]
+            webfaction.connect2(ftp_user, ftp_password)
+            name = webfaction.current_account["username"]
+            is_webfaction = True
         except:
-            #this must not be for a webfaction server
+            #this must not be a webfaction server
             name = input("what would you like to name this server entry: ")
-
-    if vars.verbose and name in vars.server:
+    else:
+        try:
+            webfaction.connect2(ftp_user, ftp_password)
+            is_webfaction = True
+        except:
+            pass
+    if vars.verbose and name in vars.servers:
         print("Warning: {} is already a server entry and will be overwritten.".format(name))
 
     webfaction_user = webfaction_password = None
-    is_webfaction = ("webfaction" in host)
     if not is_webfaction:
         resp = input("Is this a Webfaction Server [Yes/no]: ")
         is_webfaction = not bool(resp.startswith("n"))
 
     if is_webfaction:
-        same = input("Are the Webfaction account and SSH credentials also {} and {} [Yes/no]: ".format(ftp_user, ftp_password))
-    else:
-        same = input("Are the SSH credentials also {} and {} [Yes/no]: ".format(ftp_user, ftp_password))
+        if can_wf_login(ftp_user, ftp_password):
+            webfaction_user = ftp_user
+            webfaction_password = ftp_password
+        else:
+            webfaction_user = input("Enter the Webfaction username for {}: ".format(name))
+            webfaction_password = input("Enter the Webfaction password for {}: ".format(name))
 
-    if not same.lower().startswith("n"):
+    if is_webfaction:
+        host = webfaction.get_webserver2(webfaction_user, webfaction_password)
+    else:
+        host = input("Enter the host (example web353.webfaction.com): ")
+
+    if can_ssh_login(host, ftp_user, ftp_password):
         ssh_user = ftp_user
         ssh_password = ftp_password
     else:
@@ -57,14 +76,7 @@ def interactively_add_conf_entry(name=None):
         ssh_password = input("Enter the SSH password for {}: ".format(name))
 
     if is_webfaction:
-        if not same.lower().startswith("n"):
-            webfaction_user = ssh_user
-            webfaction_password = ssh_password
-        else:
-            webfaction_user = input("Enter the Webfaction username for {}: ".format(name))
-            webfaction_password = input("Enter the Webfaction password for {}: ".format(name))
-
-        wf, wf_id = lib.webfaction.connect2(webfaction_user, webfaction_password)
+        wf, wf_id = webfaction.connect2(webfaction_user, webfaction_password)
         resp = wf.list_domains(wf_id)
         domains = []
         for group in resp:
@@ -74,7 +86,7 @@ def interactively_add_conf_entry(name=None):
                 domains.append(sub+"."+domain)
     else:
         domains = input("Enter a comma seperated list of the domains on this server: ")
-        domains = list(eval(domains))
+        domains = list(str(domains).split(","))
 
     add_conf_entry2(name, host, ftp_user, ftp_password, ssh_user, ssh_password, webfaction_user, webfaction_password, is_webfaction, domains)
 
@@ -115,7 +127,7 @@ def add_conf_entry(name, lastpass_ftp_query=None, lastpass_ssh_query=None, lastp
     elif webfaction_is_ssh:
         webfaction_cred = ssh_cred
         try:
-            lib.webfaction.connect2(ssh_cred.username, ssh_cred.password)
+            webfaction.connect2(ssh_cred.username, ssh_cred.password)
         except lib.errors.LoginError:
             is_webfaction = False
     else:
@@ -152,7 +164,7 @@ def add_conf_entry2(name, host, ftp_user, ftp_password, ssh_user, ssh_password, 
         conf.write(configfile)
 
     #refresh the vars.servers dictionary
-    pull_conf_entries()
+    pull_server_entries()
 
 #A custom dictionary class is used for the servers dictionary that will add a new entry,
 #prompting the user for the necessary info,
@@ -165,16 +177,20 @@ class ServersDict(dict):
         else:
             raise KeyError("couldn't find the server entry '{}'".format(name))
 
-def pull_conf_entries():
+def pull_server_entries():
     """Read whatever is currently in the servers.txt file and save the results in the vars.servers dictionary"""
     servers = ServersDict()
     for section in vars.servers_conf.sections():
         servers[section] = {}
         for (key, val) in vars.servers_conf.items(section):
+            if key == "domains":
+                val = eval(str(val))
+            elif key == "is-webfaction-server":
+                val = bool(eval(str(val)))
             servers[section][key] = val
     vars.servers = servers
 
-def save_servers():
+def push_server_entries():
     """ saves whatever is in the vars.servers dictionary to the servers.txt file """
     conf = configparser.ConfigParser()
     for section in vars.servers.keys():
@@ -186,3 +202,36 @@ def save_servers():
     vars.servers_conf = conf
     with vars.servers_conf_loc.open('w') as configfile:
         conf.write(configfile)
+
+
+def can_ftp_login(host, user, password):
+    """ returns if we can login to a ftp account with the provided credentials """
+    ip = socket.gethostbyname(domains.normalize_domain(host)) ############
+    try:
+        ftplib.FTP(ip, user, password)
+    except (ftplib.error_reply, ftplib.error_temp, ftplib.error_perm):
+        return False
+    return True
+
+def can_ssh_login(host, user, password):
+    """ returns if we can ssh into a server with the credentials provided """
+    try:
+        if os.name == "nt":
+            cmd = 'putty -ssh {}@{} -pw {} echo "hi" '.format(user, host, password)
+            if vars.verbose:
+                print("executing", cmd)
+            subprocess.check_output(cmd)
+        else:
+            cmd = "sspass -p{} {}@{} echo 'hi'".format(password, user, host)
+            subprocess.check_output(cmd)
+    except:
+        return False
+    return True
+
+def can_wf_login(user, password):
+    """returns if we can login into the webfaction api with the credentials provided """
+    try:
+        webfaction.connect2(user, password)
+    except lib.errors.LoginError:
+        return False
+    return True
