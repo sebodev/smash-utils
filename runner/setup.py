@@ -10,6 +10,7 @@ prompts the user to add this script to the system path if it hasn't been done
 keep track if first or repeat time running setup and prompt what to reconfigure second time running script"""
 
 import os, os.path, subprocess, configparser, getpass
+from pathlib import Path
 
 from runner import vars
 try:
@@ -66,7 +67,7 @@ def save_locations():
     if google_drive_dir:
         vars.sebo_conf.set("locations", "google_drive", google_drive_dir)
 
-    assert(os.path.exists(project_dir))
+    assert(Path(project_dir).is_dir())
     if google_drive_dir:
         assert(os.path.exists(google_drive_dir), google_drive_dir + " does not exist")
 
