@@ -11,7 +11,7 @@ def encrypt(password):
     #we use a simple encryption with a password key stored by Google Drive that can only be retreieved by authenticating with Google Drive
     #and we use a built-in encryption function to windows that only can be decrypted from a program run on the computer it was encrypted from
     #I don't know if there is any such function on Macs, so we'll just revert back to the defualt behaviour of asking the for a password each time on a mac
-    if os.name != 'nt':
+    if os.name == 'nt':
         try:
             import win32crypt
         except:
@@ -53,7 +53,7 @@ def encrypt(password):
 def unencrypt(password):
     """retrieves a password saved with save_password"""
 
-    if os.name != 'nt':
+    if os.name == 'nt':
 
         try:
             import win32crypt

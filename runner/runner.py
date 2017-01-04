@@ -12,8 +12,8 @@ if "--setup" in sys.argv:
 
 elif "--temp" in sys.argv:
     #This is just a place for me to temporarily test stuff
-    for k, v in vars.servers["universal"].items():
-        print(k, v, type(v))
+    import lib.servers
+    lib.servers.add_conf_entry("sitesmash", "sitesmash webfaction account", "sitesmash webfaction account", "sitesmash webfaction account")
 
 if "--wp-cli" in sys.argv:
     from lib import wp_cli

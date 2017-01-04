@@ -56,7 +56,12 @@ def save_locations():
     project_dir = None
     while not project_dir:
         project_dir = input("Type in the name of the folder you would like us to download wordpress themes into so you can work your mad developer skills on them: ")
+    if not (Path(project_dir).is_dir()):
+        raise Exception(project_dir + " does not exist")
     google_drive_dir = input("Where is your Google Drive folder. If Google Drive hasn't been installed, you'll want to install it: ")
+    if google_drive_dir:
+        if not os.path.exists(google_drive_dir):
+            raise Exception(google_drive_dir + " does not exist")
 
     if not vars.sebo_conf.has_section('locations'):
         vars.sebo_conf.add_section('locations')
@@ -66,10 +71,6 @@ def save_locations():
     vars.sebo_conf.set("locations", "project_dir", project_dir)
     if google_drive_dir:
         vars.sebo_conf.set("locations", "google_drive", google_drive_dir)
-
-    assert(Path(project_dir).is_dir())
-    if google_drive_dir:
-        assert(os.path.exists(google_drive_dir), google_drive_dir + " does not exist")
 
     vars.sebo_conf.set("locations", "stored_data", vars.storage_dir)
     vars.sebo_conf.set("setup_info", "setup_ran", "True")
