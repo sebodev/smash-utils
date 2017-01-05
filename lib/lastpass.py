@@ -13,13 +13,12 @@ lastpass_username = vars.credentials_conf.get('lastpass', 'username', fallback=N
 lastpass_password = vars.credentials_conf.get('lastpass', 'password', fallback=None)
 if vars.new_credentials:
     lastpass_username = lastpass_password = None
+accounts_cache = None
 
 def _prompt_for_credentials():
     global lastpass_username, lastpass_password
-    if not lastpass_username:
+    if not lastpass_username or vars.new_credentials:
         lastpass_username = input("What's your lastpass username (your sebodev email): ")
-        save_username(lastpass_username)
-    elif vars.new_credentials:
         save_username(lastpass_username)
 
     try:
@@ -37,8 +36,12 @@ def find_exact(name):
         if str(name) == password_obj.name.decode().strip():
             return password_obj
 
-def get_all_accounts():
-    global lastpass_username, lastpass_password
+def get_all_accounts(caching=True):
+    global lastpass_username, lastpass_password, accounts_cache
+
+    if accounts_cache and caching:
+        return accounts_cache
+
     if not (lastpass_username and lastpass_password):
         _prompt_for_credentials()
     else:
@@ -53,6 +56,8 @@ def get_all_accounts():
         save_password(lastpass_password)
     except lib._lastpass.exceptions.NetworkError:
         raise SmashException("Well shoot. A network error. LastPass must have locked us out again :( You'll have to wait a few minutes and try again.")
+
+    accounts_cache = vault.accounts
     return vault.accounts
 
 def find(search_term, search_term2=None):
@@ -74,23 +79,21 @@ def save_username(username):
 def save_password(password):
     """encrypts and saves password to a config file
     only works on Windows """
-    if os.name == 'nt':
 
-        encoded2 = encoder.encrypt(password)
+    encoded2 = encoder.encrypt(password)
 
-        vars.credentials_conf.set('lastpass', 'password', encoded2)
+    vars.credentials_conf.set('lastpass', 'password', encoded2)
 
-        with vars.credentials_conf_loc.open('w') as configfile:
-            vars.credentials_conf.write(configfile)
+    with vars.credentials_conf_loc.open('w') as configfile:
+        vars.credentials_conf.write(configfile)
 
 def retrieve_password():
     """retrieves a password saved with save_password
     may raise lib.error.SmashException
     only works on windows"""
-    if os.name == 'nt':
 
-        password = vars.credentials_conf.get('lastpass', 'password', fallback=None)
-        if not password:
-            return
+    password = vars.credentials_conf.get('lastpass', 'password', fallback=None)
+    if not password:
+        return
 
-        return encoder.unencrypt(password)
+    return encoder.unencrypt(password)

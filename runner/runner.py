@@ -5,15 +5,12 @@ from runner.get_cmd_line_options import args
 from runner import vars #oops I just overwrote a built in function. To access it use `import builtins; builtins.vars`
 from lib import domains
 
-
 if "--setup" in sys.argv:
     from runner import setup
     setup.main()
 
 elif "--temp" in sys.argv:
     #This is just a place for me to temporarily test stuff
-    import lib.servers
-    lib.servers.add_conf_entry("sitesmash", "sitesmash webfaction account", "sitesmash webfaction account", "sitesmash webfaction account")
 
 if "--wp-cli" in sys.argv:
     from lib import wp_cli

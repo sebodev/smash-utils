@@ -22,6 +22,7 @@ import lib.webfaction
 import sys
 
 def setup_servers_conf():
+    print("Retreiving and saving Webfaction credentials from LastPass...")
     lib.servers.add_conf_entry("sebodev", "Sebodev FTP", "Sebodev SSH", "Sebodev Webfaction Account")
     lib.servers.add_conf_entry("sitesmash", "sitesmash webfaction account", "sitesmash webfaction account", "sitesmash webfaction account")
     lib.servers.add_conf_entry("wpwarranty", ssh_is_ftp=True)
