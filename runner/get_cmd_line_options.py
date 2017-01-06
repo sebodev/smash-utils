@@ -71,7 +71,7 @@ general.add_argument("--dns", nargs="*", default="", const=None, metavar=("domai
 general.add_argument("--hosts", action="store_true", help="Opens the hosts file in notepad or vi")
 general.add_argument("--md5", nargs="?", default="", metavar="password", help="takes a password and outputs the md5 hash")
 general.add_argument("--ssh", nargs="+", metavar=("website", "command"), help="ssh into a website or server")
-general.add_argument("--wp-cli", nargs=2, metavar=("website", "command"), help="runs a wp_cli command on the server")
+general.add_argument("--wp-cli", nargs="*", metavar=("website", "command"), help="runs a wp_cli command on the server")
 
 maintenance.add_argument("--lockouts", nargs="?", metavar="website", help="Checks the number of ithemes security lockouts logged in a database")
 maintenance.add_argument("--monthly", nargs="*", default="", metavar=("website"), help="Performs part of the initial setup for a new WordPress Warranty client.")
@@ -99,8 +99,12 @@ if len(sys.argv) == 1:
 
 args, other_args = parser.parse_known_args()
 
+ops = []
+for op in parser._actions:
+    ops.extend(op.option_strings)
+
 if other_args:
-    if len(sys.argv) > 2:
-        raise Exception("Recieved the extra arguments %s" % " and ".join(other_args))
+    if sys.argv[1] in ops:
+        raise Exception("Recieved the extra arguments {}".format(" and ".join(other_args)))
     else:
-        raise Exception("Didn't recognize %s. Spelling mistaek?" % " and ".join(other_args))
+        raise Exception("Didn't recognize {} Spelling mistaek?".format(sys.argv[1]))

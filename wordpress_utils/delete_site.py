@@ -35,7 +35,7 @@ def main(website):
             db = input("Enter a database to delete: ")
             wf.delete_db(wf_id, db, "mysql")
 
-            r = input("would you like to delete a database user as well [Yes/no]")
+            r = input("would you like to delete a database user as well [Yes/no]: ")
             if not r.lower().startswith("n"):
                 db_user = input("Enter a database user to delete: ")
                 wf.delete_db_user(wf_id, db_user, "mysql")
@@ -43,7 +43,7 @@ def main(website):
             db_user = input("Enter a database user to delete: ")
             wf.delete_db_user(wf_id, db_user, "mysql")
 
-            r = input("would you like to delete a database as well [Yes/no]")
+            r = input("would you like to delete a database as well [Yes/no]: ")
             if not r.lower().startswith("n"):
                 db = input("Enter a database user to delete: ")
                 wf.delete_db(wf_id, db, "mysql")
@@ -79,7 +79,7 @@ def main(website):
             "app: {app}\n"
             "database: {db}\n"
             "database user: {db_user}\n\n"
-            "Ok to delete the above items [yes/No]:".format(**locals()))
+            "Ok to delete the above items [yes/No]: ".format(**locals()))
 
         if resp.lower().startswith("y"):
 

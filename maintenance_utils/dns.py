@@ -18,7 +18,7 @@ def main(domain, output_file=None):
         raise Exception("Hey %s. Could you quickly add a .com or a .whatever to the end of that domain. Thanks" % user)
 
     cmd = 'nslookup -type=any %s'  % domain
-    output_file_res = subprocess.check_output(cmd).decode("utf-8")
+    output_file_res = subprocess.check_output(cmd, shell=True).decode("utf-8")
 
     # decide where we will store the results
     if output_file:

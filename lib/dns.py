@@ -32,7 +32,7 @@ def get_whois_dict(domain):
 def get_web_host(domain):
     try:
         cmd = 'nslookup -type=ptr %s'  % socket.gethostbyname(domain)
-        res = subprocess.check_output( cmd ).decode("utf-8")
+        res = subprocess.check_output( cmd, shell=True ).decode("utf-8")
         res = res[res.find("name") : ]
         _, res = res.split("=")
         webhost = res.strip()

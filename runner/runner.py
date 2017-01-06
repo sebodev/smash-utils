@@ -11,6 +11,10 @@ if "--setup" in sys.argv:
 
 elif "--temp" in sys.argv:
     #This is just a place for me to temporarily test stuff
+    from lib import wp_cli
+    _, server, app = domains.info("staging.ujido.com")
+    wp_cli.run(server, app, "help")
+    pass
 
 if "--wp-cli" in sys.argv:
     from lib import wp_cli
@@ -24,6 +28,14 @@ if "--wp-cli" in sys.argv:
         cmd = args.wp_cli[1]
     except:
         cmd = None
+
+    try:
+        additional_args = args.wp_cli[2:]
+    except:
+        additional_args = None
+
+    if additional_args:
+        cmd = cmd + " " + " ".join(additional_args)
 
     while not site:
         site = input("Enter a website: ")

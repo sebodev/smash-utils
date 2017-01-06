@@ -2,6 +2,7 @@
 '''
 
 import os, sys, time, re, socket
+import requests
 import urllib.request, urllib.parse, urllib.error, urllib.parse, unittest
 import xmlrpc.client
 
@@ -12,6 +13,7 @@ from lib import password_creator
 from lib.errors import SmashException
 from lib import domains
 from lib import passwords
+from lib import wp_cli
 
 CURRENT_WORDPRESS_VERSION = "wordpress-4.7"
 
@@ -137,113 +139,82 @@ def create(website, server=None, app_type=CURRENT_WORDPRESS_VERSION):
     ## now on to fixing up our wordpres settings ##
     ###############################################
 
-    from selenium import webdriver
-    from selenium.webdriver.common.by import By
-    from selenium.webdriver.common.keys import Keys
-    from selenium.webdriver.support.ui import Select
-    from selenium.common.exceptions import NoSuchElementException
-    from selenium.common.exceptions import NoAlertPresentException
-    from selenium.webdriver.common.action_chains import ActionChains
-
     wp_initial_passwd = wp_password
+    user = wf.system(wf_id, 'echo "$USER"')
 
+    print("Waiting for the new site to be created", end="")
 
-    if True:
-        print('waiting 5 minutes for the site to be created...')
-        time.sleep(300)
-    if False:
-        input('To continue. Push enter once the site is up...')
+    def loading_dots():
+        while True:
+            yield("\rWaiting for the new site to be created.   ")
+            yield("\rWaiting for the new site to be created..  ")
+            yield("\rWaiting for the new site to be created... ")
 
-    try:
-        driver = webdriver.Chrome()
-        driver.implicitly_wait(30)
+    def site_is_up():
+        #I'm considering the site ready to be used once we're able to successfully login to the website
+        post_data = {
+            'proxyUsername': user,
+            'proxyPassword': wp_password,
+            'proxyRememberUser': True
+        }
+        return requests.post("http://"+site, data=post_data)
 
-        driver.get('http://' + site + "/wp-admin")
-        print('let me take a moment to make a few tweaks to your wordpress installation for you...')
-        driver.find_element_by_id("user_login").clear()
-        driver.find_element_by_id("user_login").send_keys("sebodev")
-        driver.find_element_by_id("user_pass").clear()
-        driver.find_element_by_id("user_pass").send_keys(wp_initial_passwd)
-        driver.find_element_by_id("wp-submit").click()
-        driver.get('http://%s.sebodev.com/wp-admin/user-new.php' % site_name)
+    max_attempts = 50
+    dots = loading_dots()
+    for i in range(max_attempts):
+        if site_is_up():
+            break
+        time.sleep(3)
+        print(next(dots), end="", flush=True)
+        sys.stdout.flush()
+    else:
+        raise Exception(
+                            ("I'm bored of waiting for the website to be created.\n"
+                            "After waiting for like at least {} seconds, I'm still not able to login.\n"
+                            "You'll have to finish configuring the website yourself."
+                            ).format(max_attempts*3)
+                        )
 
-        #create the sitekeeper user
-        def create_password():
-            import string, random
-            chars = string.ascii_letters + string.digits + string.punctuation
-            passwd_size = 16
-            password = ''.join((random.SystemRandom().choice(chars)) for i in range(passwd_size))
-            print("\nThe wordpress credential are now:")
-            print("Login Url: http://" + site + "/wp-admin")
-            print("Username: sitekeeper")
-            print("Password: " + password)
-            return password
-        driver.find_element_by_id("user_login").clear()
-        driver.find_element_by_id("user_login").send_keys("sitekeeper")
-        driver.find_element_by_id("email").clear()
-        driver.find_element_by_id("email").send_keys("hi@sebodev.com")
-        driver.find_element_by_id("first_name").clear()
-        driver.find_element_by_id("first_name").send_keys("Snap")
-        driver.find_element_by_id("last_name").clear()
-        driver.find_element_by_id("last_name").send_keys("Site")
-        driver.find_element_by_id("url").clear()
-        driver.find_element_by_id("url").send_keys("http://sebodev.com")
-        driver.find_element_by_class_name('wp-generate-pw').click()
-        password = create_password()
-        time.sleep(.5)
-        driver.find_element_by_id('pass1-text').click()
-        driver.find_element_by_id('pass1-text').clear()
-        driver.find_element_by_id('pass1-text').send_keys(password)
-        driver.find_element_by_id("send_user_notification").click()
-        Select(driver.find_element_by_id("role")).select_by_visible_text("Administrator")
-        driver.find_element_by_id("createuser").click()
-        driver.find_element_by_id("createusersub").click()
-        driver.get('http://' + site + "/wp-login.php?action=logout")
-        driver.find_element_by_link_text("log out").click()
+    print("waiting 30 more seconds, and then I'll start configuring things")
+    time.sleep(30)
 
+    if vars.verbose:
+        print("installing wp-cli, creating the sitekeeper user, and removing the {} user".format(user))
+    wp_cli.run(server, app_name, "wp user create sitekeeper hi@sitesmash.com --role=administrator")
+    password = password_creator.create(length=14)
+    time.sleep(1)
+    wp_cli.run(server, app_name, "wp user update sitekeeper --display_name='Site Smash' --user_pass={}".format(password))
+    print("{} username: sitekeeper new password: {}".format(site, password))
+    time.sleep(1)
+    wp_cli.run(server, app_name, "wp user delete 1 --reassign=2 ".format())
 
-        #log back in and delete the sebodev user
-        #
-        driver.find_element_by_id("user_login").clear()
-        driver.find_element_by_id("user_login").send_keys("sitekeeper")
-        driver.find_element_by_id("user_pass").clear()
-        driver.find_element_by_id("user_pass").send_keys(password)
-        driver.find_element_by_id("wp-submit").click()
+    if vars.verbose:
+        print("updating blog name and permalink structure")
+    time.sleep(1)
+    wp_cli.run(server, app_name, "wp option update blogname {}".format(site_name))
+    time.sleep(1)
+    wp_cli.run(server, app_name, "wp rewrite structure '/%category%/%postname%/'")
 
-        if True:
-            driver.get('http://' + site + "/wp-admin/users.php")
-            delete = driver.find_element_by_link_text("sebodev")
-            ActionChains(driver).move_to_element(delete).move_to_element(
-                driver.find_element_by_class_name("submitdelete")
-                ).click().perform()
+    if vars.verbose:
+        print("configuring installed plugins")
 
-            driver.find_element_by_id("delete_option1").click()
-            driver.find_element_by_id("submit").click()
+    wp_cli.run(server, app_name, "wp plugin deactivate hello-dolly"))
+    wp_cli.run(server, app_name, "wp plugin delete hello-dolly"))
+    wp_cli.run(server, app_name, "wp plugin deactivate jetpack"))
+    wp_cli.run(server, app_name, "wp plugin delete jetpack"))
 
-        #change the permalink structure
-        driver.get('http://' + site + "/wp-admin/options-permalink.php")
-        driver.find_element_by_id("permalink_structure").clear()
-        driver.find_element_by_id("permalink_structure").send_keys("/%category%/%postname%/")
-        driver.find_element_by_id("submit").click()
+    wp_cli.run(server, app_name, "wp plugin install {} --activate".format("https://downloads.wordpress.org/plugin/wordpress-seo.4.0.2.zip"))
+    wp_cli.run(server, app_name, "wp plugin install {}".format("https://downloads.wordpress.org/plugin/advanced-custom-fields.4.4.11.zip"))
 
-        #change the blog name
-        driver.get('http://' + site + "/wp-admin/options-general.php")
-        driver.find_element_by_id("blogname").clear()
-        driver.find_element_by_id("blogname").send_keys(site_name)
-        driver.find_element_by_id("blogdescription").clear()
-        driver.find_element_by_id("blogdescription").send_keys("")
-        driver.find_element_by_id("admin_email").clear()
-        driver.find_element_by_id("admin_email").send_keys("hi@sebodev.com")
+    wp_cli.run(server, app_name, "wp plugin update --all")
 
-        #discourage search engine crawls
-        driver.get('http://' + site + "/wp-admin/options-reading.php")
-        driver.find_element_by_id("blog_public").click()
-
-        driver.find_element_by_id("submit").click()
-
-        driver.quit()
-        print('\nAll done. You know have a fancy schnazzy site to play around with.\n')
-
-    except KeyboardInterrupt:
-        driver.quit()
-        raise
+    print(
+              ("\nAll done. You know have a fancy schnazzy site to play around with.\n "
+              "Your credentials are: \n"
+              "\n"
+              "login URL: {} \n"
+              "username: sitekeeper \n"
+              "password: {} \n"
+              "\n"
+              ).format("http://"+site_name+"/wp-admin", password)
+         )

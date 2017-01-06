@@ -1,24 +1,39 @@
-import subprocess
+import subprocess, os.path
 
 from runner import vars
 import lib.errors
 from lib import ssh
 from lib import webfaction
+from lib import servers
 
 def run(server, app, cmd):
     """runs a wp_cli command installing wp_cli if it is not installed """
-    try:
-        run2(server, app, cmd)
-    except subprocess.CalledProcessError:
-        install(server, app)
-        run2(server, app, cmd)
 
-def run2(server, app, cmd):
+    wf, wf_id = webfaction.connect(server)
+    cmd2 = "test -e " + _root_dir(server, app)+"/wp-cli.phar" + " && echo Exists"
+    wp_cli_exists = wf.system(wf_id, cmd2).strip()
+
+    if wp_cli_exists:
+        run2(server, app, cmd, check_output=True)
+    else:
+        install(server, app)
+        run2(server, app, cmd, check_output=False)
+
+def run2(server, app, cmd, check_output):
     """runs a wp_cli command raising subprocess.CalledProcessError if wp_cli is not installed """
-    cmd.lstrip("wp")
+    if cmd.startswith("wp "):
+        cmd = cmd[len("wp "):]
+    cmd.lstrip()
     root = _root_dir(server, app)
-    cmd = "cd {root} && php {root}/wp-cli.phar {cmd}".format(**locals())
-    ssh.run(server, cmd)
+
+    #run with php55 on webfaction servers and with php on all other servers.
+    #I believe it was version 5.2+ that is needed to be able to properly run phar files
+    if servers.get(server, "is-webfaction-server"):
+        cmd = "cd {root} && php55 {root}/wp-cli.phar {cmd}".format(**locals())
+    else:
+        cmd = "cd {root} && php {root}/wp-cli.phar {cmd}".format(**locals())
+
+    ssh.run(server, cmd, raise_errors=check_output)
 
 def install(server, app):
     ssh.run(server, "curl -o {}/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar".format(_root_dir(server, app)))
