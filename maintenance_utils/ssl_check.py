@@ -5,6 +5,7 @@ import ssl
 import datetime
 import subprocess
 import os
+import time
 
 import lib.webfaction
 from runner import vars
@@ -19,10 +20,8 @@ class AlreadyExpired(SmashException):
     pass
 
 def install(server):
-    print("To install LetsEncrypt, follow the instructions at https://github.com/will-in-wi/letsencrypt-webfaction#system-ruby")
-    if os.name == "nt":
-        subprocess.run('start chrome --new-window "https://github.com/will-in-wi/letsencrypt-webfaction#system-ruby"', shell=True)
-    input("press enter once LetEncrypt has been installed")
+    print("If it's not already installed, follow the LetsEncrypt installation instructions at https://github.com/will-in-wi/letsencrypt-webfaction#system-ruby")
+    input("press enter when done")
     # ssh.run(server, "rbenv install 2.3.1") # Installs Ruby 2.3.1
     # ssh.run(server, "rbenv local 2.3.1") # Sets Ruby 2.3.1 as the default version in the current folder.
     # ssh.run(server, "gem install letsencrypt_webfaction") # Installs this utility from RubyGems.
@@ -38,25 +37,47 @@ def add_using_server(server_name, app):
     install(server_name)
     s_info = servers.get(server_name)
     assert(s_info["is-webfaction-server"])
-    email = input("what is the email address associated with this account: ")
-    cmd = 'letsencrypt_webfaction --letsencrypt_account_email {} --domains {} --public {} --username {} --password "{}"'.format(
+    email = vars.credentials_conf["lastpass"]["username"]
+    cmd = 'source $HOME/.bash_profile; letsencrypt_webfaction --letsencrypt_account_email {} --domains {} --public {} --username {} --password "{}"'.format(
             email,
             ",".join(webfaction.get_domains(server_name, app)),
             webfaction.get_app_dir(server_name, app),
             s_info["webfaction-username"],
             s_info["webfaction-password"]
         )
-    #ssh.run(server_name, cmd)
-    print("Now in the server you've SSH'd into, run {}".format(cmd))
+    ssh.run(server_name, cmd)
 
-    input("Now you'll just need to login to Webfaction and add the certificate... Yeah this process isn't that automated yet")
+
+    domain = webfaction.get_domains(server_name, app)[0]
+    cert_name = domain.replace(".", "_")
+    info = website_info(server_name, domain)
+
+    if info["name"]+"_https" in webfaction.get_website(server_name, domain):
+        if vars.verbose:
+            print('updating website with site_name={name}, ip={ip}, https=True, domains={subdomains}, cert={cert_name}, apps={apps}'
+                  .format(cert_name=cert_name, apps=info["website_apps"][0], **info))
+        wf, wf_id = webfaction.connect(server_name, version=2)
+        wf.update_website(wf_id, "esa_https", info["ip"], True, info["subdomains"], cert_name, info["website_apps"][0])
+    else:
+        if vars.verbose:
+            print("creating website where site_name={name}_https, ip={ip}, https=True, domains={subdomains}, cert={cert_name}, apps={apps}"
+                  .format(cert_name=cert_name, apps=info["website_apps"][0], **info))
+        wf, wf_id = webfaction.connect(server_name, version=2)
+        wf.create_website(wf_id, info["name"]+"_https", info["ip"], True, info["subdomains"], cert_name, info["website_apps"][0])
 
 def add_using_domain(domain):
     _, server, app = domains.info(domain)
-    assert server
+    assert(server)
     return add_using_server(server, app)
 
-
+def website_info(server, domain):
+    """returns a dictionary with the keys
+    id, name, ip, https, subdomains, apps"""
+    wf, wf_id = webfaction.connect(server)
+    sites = wf.list_websites(wf_id)
+    for site in sites:
+        if domain in site["subdomains"]:
+            return site
 
 def main(domain_or_server=None):
     """ checks when a domain expires.

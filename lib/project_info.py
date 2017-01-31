@@ -13,7 +13,7 @@ def get_project_from_dir(the_dir):
         return None
 
 def info(project, theme=None, user=None):
-    '''returns a dictionary of info about a project'''
+    '''deprecated: returns a dictionary of info about a project'''
 
     project_dir = vars.projects_root_dir / (project or '')
     if not theme:
@@ -21,7 +21,7 @@ def info(project, theme=None, user=None):
     if theme != project:
         project_dir = project_dir / theme
     project_dir = str(project_dir)
-    
+
     webfaction_theme_dir = '/home/{}/webapps/{}/wp-content/themes/{}/'.format(user, project, theme)
     webfaction_plugins_dir = '/home/{}/webapps/{}/wp-content/plugins/'.format(user, project)
 

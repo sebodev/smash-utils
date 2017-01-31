@@ -1,6 +1,18 @@
 '''Creates a new wordpress site on the webfaction server
 '''
 
+def _change_current_project(project, new_theme=None):
+    '''deprecated. Use project_info.info() instead '''
+    if not project:
+        project = vars.current_project
+    info = project_info.info(project, theme=new_theme, user="sebodev")
+    vars.theme = info["theme"]
+    vars.current_project = info["project"]
+    vars.project_dir = Path(info["project_dir"])
+    vars.webfaction_theme_dir = Path(info["webfaction_theme_dir"])
+    vars.servers_theme_dir = vars.webfaction_theme_dir
+
+_change_current_project(input("Hate to ask again, but I seem to have forgotten the domain you entered. Can you enter it again: "))
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By

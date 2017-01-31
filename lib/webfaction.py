@@ -12,7 +12,7 @@ current_account = None
 xmlrpc_cache = {}
 account_cache = {}
 
-def connect(server):
+def connect(server, version=1):
     global current_account, xmlrpc_cache
 
     if server in xmlrpc_cache:
@@ -26,14 +26,14 @@ def connect(server):
     if "webfaction-password" in vars.servers[server].keys():
         password = vars.servers[server]["webfaction-password"]
 
-    webfaction, wf_id = connect2(username, password)
+    webfaction, wf_id = connect2(username, password, version)
 
-    #xmlrpc_cache[server] = webfaction, wf_id #Caching the connections will sometimes cause problems. I'm thinking webfaction has a very short amount of time that it allows a connection to stay alive.
+    #xmlrpc_cache[server] = webfaction, wf_id #Caching the connections will sometimes cause problems.
     account_cache[server] = current_account
 
     return webfaction, wf_id
 
-def connect2(username, password):
+def connect2(username, password, version=1):
     global current_account
 
     if vars.verbose:
@@ -41,7 +41,7 @@ def connect2(username, password):
 
     try:
         webfaction = xmlrpc.client.ServerProxy("https://api.webfaction.com/")
-        wf_id, current_account = webfaction.login(username, password)
+        wf_id, current_account = webfaction.login(username, password, "", version)
     except xmlrpc.client.Fault as err:
         if str(err) == "<Fault 1: 'LoginError'>":
             raise lib.errors.LoginError("Failed to login to Webfaction with the credentials {} and {}".format(username, password))
@@ -56,12 +56,15 @@ def get_webapps(server, domain=None):
         apps = wf.list_apps(wf_id)
         return [app["name"] for app in apps]
     else:
+        ret = []
         wf, wf_id = connect(server)
         resp = wf.list_websites(wf_id)
         for group in resp:
             if domain in group["subdomains"]:
                 apps = group["website_apps"]
-                return [app[0] for app in apps]
+                ret.extend([app[0] for app in apps])
+        ret = list(set(ret)) #remove duplicate entries
+        return ret
 
 def get_domains(server, app=None):
     if not app:
@@ -83,14 +86,10 @@ def get_domains(server, app=None):
 
 def get_server(domain):
     """gets the server associated with the domain.
-    First checks the domains currently known to be associated with each server.
-    Use the --new-credentials flag to refresh this info.
-    If the server cannot be found, logs into to all of the Webfaction servers in the vars.servers dictionary looking
-    for the associated server. Webfaction accounts with incorrect login info are currently being ignored """
-
-    #recreate the domains associated with each server if the --new-credentials flag is passed in
-    if vars.new_credentials:
-        domains.refresh_domains_cache()
+    First try checking against a local cache,
+    and then try logging into all of the webfaction servers you've told smash-utils the credentials for.
+    Each time we login to a website we update the local cache.
+    Webfaction accounts with incorrect login info are ignored """
 
     #method1
     for server_name, server in vars.servers.items():
@@ -106,10 +105,14 @@ def get_server(domain):
     for server in vars.servers.keys():
         if servers.get(server, "is-webfaction-server"):
             try:
-                if domain in get_domains(server):
+                domains = get_domains(server)
+                vars.servers[server]["domains"] = domains #this is so we will be able to update the cached server entries
+                if domain in domains:
+                    servers.push_server_entries() #update the cached server entries
                     return server
             except lib.errors.LoginError:
                 pass
+    servers.push_server_entries()
 
 def get_website(server, domain):
     """returns a list of Webfaction names associated with a domain

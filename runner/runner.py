@@ -13,10 +13,44 @@ elif "--temp" in sys.argv:
     #This is just a place for me to temporarily test stuff
     from lib import wp_cli
     _, server, app = domains.info("staging.ujido.com")
-    wp_cli.run(server, app, "help")
+    a = wp_cli.run(server, app, "help")
+    print("asdf", a, "asdf")
     pass
 
-if "--wp-cli" in sys.argv:
+
+elif "--redirect-table" in sys.argv:
+    from maintenance_utils import redirects
+
+    try:
+        old = args.redirect_table[0]
+    except:
+        old = None
+
+    try:
+        new = args.redirect_table[1]
+    except:
+        new = None
+
+    try:
+        csv = args.redirect_table[2]
+    except:
+        csv = None
+
+    while not old:
+        old = input("Enter the url of the old website")
+
+    while not new:
+        new = input("Enter the new site or the dev site for {}".format(old))
+
+    csv_guess = vars.storage_dir/"redirect_tables"/(old.replace("/", "").replace("\\", ""))
+    if not csv:
+        csv = input("Enter a csv file to save the results to. Leave blank for {}".format(csv_guess))
+    if not csv:
+        csv = csv_guess
+
+    redirects.main(old, new, csv)
+
+elif "--wp-cli" in sys.argv:
     from lib import wp_cli
 
     try:
@@ -47,7 +81,20 @@ if "--wp-cli" in sys.argv:
     if not app:
         app = input("Which app is this for: ")
 
-    wp_cli.run(server, app, cmd)
+    print( wp_cli.run(server, app, cmd) )
+
+elif "--updates" in sys.argv or "--update" in sys.argv:
+    from maintenance_utils import updates
+
+    try:
+        site = args.update[0]
+    except:
+        site = None
+    while not site:
+        site = input("Enter a website: ")
+
+    _, server, app = domains.info(site)
+    updates.main(server, app)
 
 elif "--new" in sys.argv:
     from wordpress_utils import new
@@ -342,7 +389,7 @@ elif "--db" in sys.argv:
 
     db_passwords.main(server, app_name)
 
-elif "--update" in sys.argv:
+elif "--smash-update" in sys.argv or "--update-smash-utils" in sys.argv:
     import os, subprocess
     os.chdir(str(vars.script_dir))
     subprocess.call("git pull", shell=True)
@@ -410,13 +457,7 @@ elif ("--wp" in sys.argv or "--wordpress" in sys.argv):
     wordpress_install2.create(site, server, app_type)
 
     # the following is the old way of creating sites with selenium
-    # vars.change_current_project(site)
     # from wordpress_utils import wordpress_install
-
-elif ("-_" in sys.argv or "_s-project" in sys.argv):
-    while not args._s_project:
-        args._s_project = input('Enter the project name: ')
-    import wordpress_utils.new_project
 
 elif ("--down" in sys.argv or "--download" in sys.argv):
     from wordpress_utils import download_project

@@ -13,9 +13,9 @@ from lib import wp_cli
 #from maintenance_utils import wordpress_install2
 import lib.errors
 
-def backup(server, server_dir, local_dir, do_db_backup=False, do_files_backup=True):
+def backup(server, server_dir, local_dir, do_db_backup=True, do_files_backup=True):
 
-    assert(do_db_backup or do_files_backup)
+    assert do_db_backup or do_files_backup
 
     while not server:
         server = input('Enter the server entry we are backuping from: ')
@@ -93,9 +93,10 @@ def backup(server, server_dir, local_dir, do_db_backup=False, do_files_backup=Tr
             raise lib.errors.SmashException("Database backup file is empty")
 
     if do_files_backup:
-        if (servers.get(server, "is_webfaction_server") and server_dir in lib.webfaction.get_webapps(server)):
+        if (servers.get(server, "is-webfaction-server") and server_dir in lib.webfaction.get_webapps(server)):
             user = lib.webfaction.get_user(server)
             server_dir = "/home/{}/webapps/{}".format(user, server_dir)
+            print(server_dir)
 
         #display the size of the backup folder
         #unless this is a locahost backup on a Windows machine. Windows takes forever to figure out the size of a folder
@@ -111,7 +112,7 @@ def backup(server, server_dir, local_dir, do_db_backup=False, do_files_backup=Tr
             if size_pos:
                 size = size[:size_pos]
 
-            print("\n----- backing up {} -----\n".format(size))
+            print("\n----- backing up {}B -----\n".format(size))
 
         flags = "zcvf" if vars.verbose else "zcf"
         #cmd = 'ssh {}@{} "tar -{} - {} -C {} . | gzip -c" > {}'.format(servers.get(server, "ssh-username"), servers.get(server, "host"), flags, server_dir, server_dir, output_file)
@@ -135,7 +136,7 @@ def backup(server, server_dir, local_dir, do_db_backup=False, do_files_backup=Tr
 def restore(server, server_dir, sqlDump=None, backupFile=None):
     """backupFile and sqlDump must be .tar.gz files
     server_dir can be a webfaction app name as well, and will be created if it does not exist"""
-
+    backupFile=False
     while not server:
         server = input("which server will we be restoring to today: ")
 
@@ -163,7 +164,7 @@ def restore(server, server_dir, sqlDump=None, backupFile=None):
         domains = lib.webfaction.get_domains(server, maybe_app)
         print("\n{} will be permamently changed\n".format(" and ".join(domains)))
     except:
-        print("\nThe server will be permamently changed. Muahaha.\n")
+        print("\nChanges will be permament\n")
 
     if not sqlDump:
         resp = input("would you like to restore the database [Yes/no]: ")
@@ -210,7 +211,7 @@ database password: {}
         except lib.errors.SmashException:
             resp = input("I couldn't detect a database on the server. Would you like me to create one [Yes/no]:")
             if not resp.startswith("n"):
-                db_name, db_host, db_user, db_password = create_db(to_site, app)
+                db_name, db_host, db_user, db_password = create_db(server, server_dir)
             else:
                 print("Okey dokey. If I could just grab some info from you about the database, and then I'll get out of your hair.")
                 prompt_for_db_info()
@@ -246,12 +247,18 @@ database password: {}
             print("executing command " + cmd)
         subprocess.call(cmd, shell=True)
 
+    if sqlDump:
+        #create a new wp-config file with the new database credentials
+        #and save a backup of the old one
 
-    #ToDo: change database info in wp-config.php
-    if server == "localhost":
-        db_name, db_host, db_user, db_pass = passwords.local_db(server_dir)
-    else:
-        db_name, db_host, db_user, db_pass = passwords.db(server, server_dir)
+        # if server == "localhost":
+        #     db_name, db_host, db_user, db_pass = passwords.local_db(server_dir)
+        # else:
+        #     db_name, db_host, db_user, db_pass = passwords.db(server, server_dir)
+        cmd = 'mv "{}/wp-config.php" "{}/wp-config.php.bckup"'.format(server_dir, server_dir)
+        ssh.run2(cmd)
+        wp_cli.run(server, server_dir, "core config --dbname={db_name} --dbhost={db_host} --dbuser={db_user} --dbpass={db_pass} --dbprefix=wp_")
+        #wp_cli.run("core config --dbname={db_name} --dbhost={db_host} --dbuser={db_user} --dbpass={db_pass} --dbprefix=wp_ --extra-php < \"define('WP_DEBUG', true);\"")
 
 def searchAndReplace(server, app, search=None, replace=None):
     raise NotImplemented
@@ -271,12 +278,13 @@ def searchAndReplace2(server, db_name, db_host, db_user, db_password, search=Non
 def create_db(server, name):
     """creates a database and database user with the name passed in.
     returns the database password"""
-    user = name
+    user = name[:14]
     password = lib.password_creator.create(10)
+    print("creating database with the password {}".format(password))
     wf, wf_id = webfaction.connect(server)
-    res = wf.create_db_user(wf_id, name, password, "mysql")
+    res = wf.create_db_user(wf_id, user, password, "mysql")
     print(res)
-    res = wf.create_db(wf_id, name, "mysql", password, user)
+    res = wf.create_db(wf_id, name[:14], "mysql", password, user)
     print(res)
     return (name, "localhost", user, password)
 
@@ -369,8 +377,9 @@ def migrate(from_site, to_site, migrate_db=True, migrate_files=True, use_new_db=
             print("executing command " + cmd)
         subprocess.call(cmd, shell=True)
 
-        #TODO update wp-config
-        #wp_cli.run("core config --dbname={t_db_name} --dbhost={t_db_host} --dbuser={t_db_user} --dbpass={t_db_password} --dbprefix=wp_".format(**locals()))
-
         #remove the .user.ini file that wordfence creates. PHP will stop working if we don't do this.
         ssh.run(t_server, "rm {t_app_dir}/.user.ini".format(**locals()))
+
+        #TODO update wp-config
+        ssh.run(t_server, "mv {t_app_dir}/wp-config.php {t_app_dir}/wp-config.php.bckup".format(**locals()))
+        wp_cli.run(t_server, t_app, "core config --dbname={t_db_name} --dbhost={t_db_host} --dbuser={t_db_user} --dbpass={t_db_password} --dbprefix=wp_".format(**locals()))

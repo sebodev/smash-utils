@@ -1,10 +1,12 @@
 '''
 creates the .ftpass and and remote_sync.json files
 '''
+from pathlib import Path
 import os, sys
 from runner import vars
+from lib import project_info
 
-def setup_remote_sync(server):
+def setup_remote_sync(server, project, theme, user):
     """Sets up a folder so it can be used with remote sync atom plugin """
 
     ftp_host             = vars.servers[server]['host']
@@ -13,11 +15,13 @@ def setup_remote_sync(server):
     ftp_username         = vars.servers[server]['ftp-username']
     ftp_password         = vars.servers[server]['ftp-password']
 
+    info = project_info.info(project, theme, user)
+
     remote_sync_file_contents = """
     {
       "uploadOnSave": true,
       "deleteLocal": false,
-      "hostname": "web353.webfaction.com",
+      "hostname": """ + '"' + ftp_host.replace("\\", "\\\\") + '"' + """,
       "ignore": [
         ".remote-sync.json",
         ".git/**",
@@ -27,13 +31,13 @@ def setup_remote_sync(server):
         ".ftppass"
       ],
       "transport": "scp",
-      "target": """ + '"' + str(vars.servers_theme_dir).replace("\\", "\\\\") + '"' + """,
+      "target": """ + '"' + str(info["webfaction_theme_dir"]).replace("\\", "\\\\") + '"' + """,
       "username": """ + '"' + ssh_username.replace("\\", "\\\\") + '"' + """,
       "password": """ + '"' + ssh_password.replace("\\", "\\\\") + '"' + """
     }
     """
 
-    with open(str(vars.project_dir) + '\\.remote-sync.json', 'w') as f:
+    with open(str(info["project_dir"]) + '\\.remote-sync.json', 'w') as f:
         f.write(remote_sync_file_contents)
 
     ftppass_contents = """
@@ -45,5 +49,5 @@ def setup_remote_sync(server):
     }
     """
 
-    with (vars.project_dir / '.ftppass').open('w') as f:
+    with (Path(info["project_dir"]) / '.ftppass').open('w') as f:
         f.write(ftppass_contents)

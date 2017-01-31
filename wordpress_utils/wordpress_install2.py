@@ -14,6 +14,7 @@ from lib.errors import SmashException
 from lib import domains
 from lib import passwords
 from lib import wp_cli
+import lib.password_creator
 
 CURRENT_WORDPRESS_VERSION = "wordpress-4.7"
 
@@ -129,8 +130,10 @@ def create(website, server=None, app_type=CURRENT_WORDPRESS_VERSION):
         raise Exception("Failed to create the website :( I couldn't find an id for the website and that's all I know")
 
     if "wordpress" not in app_type:
-        #db_password = lib.password_creator.create(8)
-        #print(wf.create_db(wf_id, app_name, "mysql", db_password))
+        if not input("Would you like to create a database[Y/n]").startswith("n"):
+            db_password = lib.password_creator.create(8)
+            print("created the following database")
+            print(wf.create_db(wf_id, app_name, "mysql", db_password))
         return
 
 
@@ -175,7 +178,7 @@ def create(website, server=None, app_type=CURRENT_WORDPRESS_VERSION):
                             ).format(max_attempts*3)
                         )
 
-    print("waiting 30 more seconds, and then I'll start configuring things")
+    print("\nwaiting 30 more seconds to make sure everything finishes copying, and then I'll start configuring things")
     time.sleep(30)
 
     if vars.verbose:
@@ -183,7 +186,7 @@ def create(website, server=None, app_type=CURRENT_WORDPRESS_VERSION):
     wp_cli.run(server, app_name, "wp user create sitekeeper hi@sitesmash.com --role=administrator")
     password = password_creator.create(length=14)
     time.sleep(1)
-    wp_cli.run(server, app_name, "wp user update sitekeeper --display_name='Site Smash' --user_pass={}".format(password))
+    wp_cli.run(server, app_name, "wp user update sitekeeper --display_name='Site Smash' --user_pass='{}'".format(password))
     print("{} username: sitekeeper new password: {}".format(site, password))
     time.sleep(1)
     wp_cli.run(server, app_name, "wp user delete 1 --reassign=2 ".format())
@@ -198,13 +201,27 @@ def create(website, server=None, app_type=CURRENT_WORDPRESS_VERSION):
     if vars.verbose:
         print("configuring installed plugins")
 
-    wp_cli.run(server, app_name, "wp plugin deactivate hello-dolly"))
-    wp_cli.run(server, app_name, "wp plugin delete hello-dolly"))
-    wp_cli.run(server, app_name, "wp plugin deactivate jetpack"))
-    wp_cli.run(server, app_name, "wp plugin delete jetpack"))
+    wp_cli.run(server, app_name, "wp plugin delete hello")
+    wp_cli.run(server, app_name, "wp plugin delete jetpack")
+
+    # try:
+    #     wp_cli.run(server, app_name, "wp plugin deactivate hello")
+    #     wp_cli.run(server, app_name, "wp plugin delete hello")
+    # except:
+    #     if vars.verbose:
+    #         print("failed to remove the hello-dolly plugin. Continuing normally.")
+    #
+    # try:
+    #     wp_cli.run(server, app_name, "wp plugin deactivate jetpack")
+    #     wp_cli.run(server, app_name, "wp plugin delete jetpack")
+    # except:
+    #     if vars.verbose:
+    #         print("failed to remove the jetpack plugin. Continuing normally.")
 
     wp_cli.run(server, app_name, "wp plugin install {} --activate".format("https://downloads.wordpress.org/plugin/wordpress-seo.4.0.2.zip"))
     wp_cli.run(server, app_name, "wp plugin install {}".format("https://downloads.wordpress.org/plugin/advanced-custom-fields.4.4.11.zip"))
+    wp_cli.run(server, app_name, "wp plugin install {}".format("https://downloads.wordpress.org/plugin/google-analytics-for-wordpress.5.5.4.zip"))
+    wp_cli.run(server, app_name, "wp plugin install {}".format("https://downloads.wordpress.org/plugin/mainwp-child.3.2.7.zip"))
 
     wp_cli.run(server, app_name, "wp plugin update --all")
 
@@ -216,5 +233,5 @@ def create(website, server=None, app_type=CURRENT_WORDPRESS_VERSION):
               "username: sitekeeper \n"
               "password: {} \n"
               "\n"
-              ).format("http://"+site_name+"/wp-admin", password)
+              ).format("http://"+site+"/wp-admin", password)
          )

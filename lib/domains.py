@@ -7,13 +7,28 @@ def normalize_domain(website):
     """ returns the domain for a given website """
     return website.replace("http://", "").replace("https://", "").lstrip("www.").rstrip("/")
 
+def get_sever(domain):
+    return info(domain)[1]
+    """ If this is a Webfaction app, return the name of the server, otherwise returns None """
+
+def get_sever_app(domain):
+    """ Returns the tuple (server, app)
+    If this is not a Webfaction server, server and app will be None """
+    return info(domain)[1:2]
+
+def get_severObj_server_app(domain):
+    """ Returns the tuple (server, app)
+    If this is not a Webfaction server, server and app will be None """
+    return info(domain)
+
 def info(domain_or_server, create_if_needed=True):
-    """ Returns the tuple (server_info, server, app)
+    """ Deprecated use get_severObj_server_app(), get_sever_app(), or get_sever()
+    Returns the tuple (server_info, server, app)
     If this is not a Webfaction server, server and app will be None
-    Otherwise they will be the server name and app name
     server_info will be a dictionary of credentials for the server """
     domain = normalize_domain(domain_or_server)
     server_info = server = app = None
+
     if domain_or_server in vars.servers:
         server = domain_or_server
         try:

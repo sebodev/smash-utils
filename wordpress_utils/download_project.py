@@ -1,11 +1,14 @@
 'copies a theme from the webfaction server and readies the environment for dev use'
 
 import subprocess, os, os.path
+from pathlib import Path
+
 from runner import vars
 from lib import project_info
 from lib import webfaction
 from lib import servers
 from lib import domains
+from lib import project_info
 
 def main(site, theme):
 
@@ -41,13 +44,23 @@ def main(site, theme):
 
     download(server, app_name, theme)
 
+def _change_current_project(project, new_theme=None):
+    '''deprecated. Use project_info.info() instead '''
+    if not project:
+        project = vars.current_project
+    info = project_info.info(project, theme=new_theme, user="sebodev")
+    vars.theme = info["theme"]
+    vars.current_project = info["project"]
+    vars.project_dir = Path(info["project_dir"])
+    vars.webfaction_theme_dir = Path(info["webfaction_theme_dir"])
+    vars.servers_theme_dir = vars.webfaction_theme_dir
 
 def download(server, app, theme_or_plugin):
     """ downloads a theme or plugin from a webfaction server. """
 
     theme = theme_or_plugin
 
-    vars.change_current_project(app, theme)
+    #_change_current_project(app, theme)
     info = project_info.info(app, theme, webfaction.get_user(server))
     info.update(servers.get(server))
 
@@ -70,4 +83,4 @@ def download(server, app, theme_or_plugin):
     print( "copied {} to {}".format(info["project"], info["project_dir"]) )
     print("configuring")
     from . import configure_project
-    configure_project.setup(server)
+    configure_project.setup(server, info["project"], theme_or_plugin, info["user"])

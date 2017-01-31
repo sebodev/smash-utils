@@ -1,4 +1,5 @@
-import subprocess, os.path
+from contextlib import redirect_stdout, redirect_stderr
+import io, sys, subprocess, os.path
 
 from runner import vars
 import lib.errors
@@ -14,12 +15,12 @@ def run(server, app, cmd):
     wp_cli_exists = wf.system(wf_id, cmd2).strip()
 
     if wp_cli_exists:
-        run2(server, app, cmd, check_output=True)
+        return run2(server, app, cmd)
     else:
         install(server, app)
-        run2(server, app, cmd, check_output=False)
+        return run2(server, app, cmd)
 
-def run2(server, app, cmd, check_output):
+def run2(server, app, cmd):
     """runs a wp_cli command raising subprocess.CalledProcessError if wp_cli is not installed """
     if cmd.startswith("wp "):
         cmd = cmd[len("wp "):]
@@ -33,7 +34,7 @@ def run2(server, app, cmd, check_output):
     else:
         cmd = "cd {root} && php {root}/wp-cli.phar {cmd}".format(**locals())
 
-    ssh.run(server, cmd, raise_errors=check_output)
+    return ssh.run2(server, cmd)
 
 def install(server, app):
     ssh.run(server, "curl -o {}/wp-cli.phar https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar".format(_root_dir(server, app)))

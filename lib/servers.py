@@ -14,6 +14,7 @@ def get(server, lookup=None, create_if_needed=True):
     or lookup a specific item in this dictionary if lookup is specified
     if create_if_needed is False, returns None if the server entry does not exist
     otherwise the user will be prompted to create a new server entry"""
+
     if server not in vars.servers:
         if create_if_needed:
             interactively_add_conf_entry(server)
@@ -26,12 +27,15 @@ def get(server, lookup=None, create_if_needed=True):
 def interactively_add_conf_entry(name=None):
 
     is_webfaction = False
-    if name:
-        ftp_user = input("Enter the FTP username for {}: ".format(name))
-        ftp_password = input("Enter the FTP password for {}: ".format(name))
-    else:
-        ftp_user = input("Enter the FTP username: ")
-        ftp_password = input("Enter the FTP password: ")
+    try:
+        if name:
+            ftp_user = input("Enter the FTP username for {}: ".format(name))
+            ftp_password = input("Enter the FTP password for {}: ".format(name))
+        else:
+            ftp_user = input("Enter the FTP username: ")
+            ftp_password = input("Enter the FTP password: ")
+    except (KeyboardInterrupt, SystemExit):
+        raise
 
     if not name:
         try:
@@ -189,6 +193,24 @@ def pull_server_entries():
                 val = bool(eval(str(val)))
             servers[section][key] = val
     vars.servers = servers
+
+def pull_server_entries2():
+    """Read whatever is currently in the servers.txt file and save the results in the vars.servers dictionary.
+    Updated: also looks through vars.alternate_server_confs"""
+    def _pull_entries(server_conf):
+        servers = ServersDict()
+        for section in servers_conf.sections():
+            servers[section] = {}
+            for (key, val) in servers_conf.items(section):
+                if key == "domains":
+                    val = eval(str(val))
+                elif key == "is-webfaction-server":
+                    val = bool(eval(str(val)))
+                servers[section][key] = val
+
+    vars.servers = _pull_entries(vars.servers_conf)
+    for conf in vars.alternate_server_confs:
+        raise NotImplementedError
 
 def push_server_entries():
     """ saves whatever is in the vars.servers dictionary to the servers.txt file """
