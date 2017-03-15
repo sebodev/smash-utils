@@ -18,7 +18,7 @@ If you would like to add a new command, add a file to the wordpress_utils or mai
 You will then need to add a new entry to runner/runner.py to call your python file
 You will also need to add an argparse entry in runner/get_cmd_line_options.py
 
-You will want to take a look at what's in the runner/vars.py module. There are some useful pieces of info stored in there like
+You will want to take a look at what's in the runner/smash_vars.py module. There are some useful pieces of info stored in there like
 the locations of folders where smash-utils stores data
 and various pieces of info that have been stored in config files.
 Also the lib/webfaction.py module is pretty handy for interacting with Webfaction.

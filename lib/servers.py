@@ -5,7 +5,7 @@ import lib.errors
 from lib.errors import SmashException
 from lib import lastpass
 from lib import webfaction
-from runner import vars
+from runner import smash_vars
 from lib import passwords
 from lib import domains
 
@@ -15,14 +15,20 @@ def get(server, lookup=None, create_if_needed=True):
     if create_if_needed is False, returns None if the server entry does not exist
     otherwise the user will be prompted to create a new server entry"""
 
-    if server not in vars.servers:
+    if server not in smash_vars.servers:
         if create_if_needed:
             interactively_add_conf_entry(server)
         else:
             return
     if lookup:
-        return vars.servers[server].get(lookup)
-    return vars.servers[server]
+        return smash_vars.servers[server].get(lookup)
+    return smash_vars.servers[server]
+
+def get_conf(server):
+    raise NotImplementedError
+
+def update(server, key, value, conf=None):
+    raise NotImplementedError
 
 def interactively_add_conf_entry(name=None):
 
@@ -51,7 +57,7 @@ def interactively_add_conf_entry(name=None):
             is_webfaction = True
         except:
             pass
-    if vars.verbose and name in vars.servers:
+    if smash_vars.verbose and name in smash_vars.servers:
         print("Warning: {} is already a server entry and will be overwritten.".format(name))
 
     webfaction_user = webfaction_password = None
@@ -145,9 +151,9 @@ def add_conf_entry(name, lastpass_ftp_query=None, lastpass_ssh_query=None, lastp
     add_conf_entry2(name, host, ftp_cred.username, ftp_cred.password, ssh_cred.username, ssh_cred.password, webfaction_cred.username, webfaction_cred.password, is_webfaction)
 
 def add_conf_entry2(name, host, ftp_user, ftp_password, ssh_user, ssh_password, webfaction_user=None, webfaction_password=None, is_webfaction=False, domains=[]):
-    """permamently saves the info passed in a conf file where it can be retrieved from the dictionary vars.servers using the name as the dictionary key"""
+    """permamently saves the info passed in a conf file where it can be retrieved from the dictionary smash_vars.servers using the name as the dictionary key"""
 
-    conf = vars.servers_conf
+    conf = smash_vars.servers_conf
 
     try:
         conf.add_section(name)
@@ -164,10 +170,10 @@ def add_conf_entry2(name, host, ftp_user, ftp_password, ssh_user, ssh_password, 
     conf.set(name, "webfaction-password", webfaction_password or "")
     conf.set(name, "domains", domains)
 
-    with vars.servers_conf_loc.open('w') as configfile:
+    with smash_vars.servers_conf_loc.open('w') as configfile:
         conf.write(configfile)
 
-    #refresh the vars.servers dictionary
+    #refresh the smash_vars.servers dictionary
     pull_server_entries()
 
 #A custom dictionary class is used for the servers dictionary that will add a new entry,
@@ -177,58 +183,68 @@ class ServersDict(dict):
     def __missing__(self, name):
         if not (input("I don't have any info for the server {name}. Would you like to add that info now: [Yes/no]".format(name=name)).lower().startswith("n")):
             interactively_add_conf_entry(name)
-            return dict(vars.servers_conf.items(name))
+            return dict(smash_vars.servers_conf.items(name))
         else:
             raise KeyError("couldn't find the server entry '{}'".format(name))
 
+# def pull_server_entries_old():
+#     """Read whatever is currently in the servers.txt file and save the results in the smash_vars.servers dictionary"""
+#     servers = ServersDict()
+#     for section in smash_vars.servers_conf.sections():
+#         servers[section] = {}
+#         for (key, val) in smash_vars.servers_conf.items(section):
+#             if key == "domains":
+#                 val = eval(str(val))
+#             elif key == "is-webfaction-server":
+#                 val = bool(eval(str(val)))
+#             servers[section][key] = val
+#     smash_vars.servers = servers
+
 def pull_server_entries():
-    """Read whatever is currently in the servers.txt file and save the results in the vars.servers dictionary"""
-    servers = ServersDict()
-    for section in vars.servers_conf.sections():
-        servers[section] = {}
-        for (key, val) in vars.servers_conf.items(section):
-            if key == "domains":
-                val = eval(str(val))
-            elif key == "is-webfaction-server":
-                val = bool(eval(str(val)))
-            servers[section][key] = val
-    vars.servers = servers
+    """Read whatever is currently in the servers.txt file and save the results in the smash_vars.servers dictionary.
+    Updated: also looks through smash_vars.alternate_server_confs"""
+    def pull_entries(server_conf, location=smash_vars.servers_conf_loc): #Todo location should default to an empty string and is only used for error messages. Works messily right now.
+        try:
+            servers = ServersDict()
+            for section in server_conf.sections():
+                servers[section] = {}
+                for (key, val) in server_conf.items(section):
+                    if key == "domains":
+                        val = eval(str(val))
+                    elif key == "is-webfaction-server":
+                        val = bool(eval(str(val)))
+                    try:
+                        servers[section][key] = val.strip()
+                    except AttributeError: #happens when val is not a string
+                        servers[section][key] = val
+            return servers
+        except Exception as err:
+            print("\nHey, I ran into an error trying to read one of the server config files.\n{}You'll need to fix the file \n{}\n{}\nHopefully the following error will give you enough info to figure out what's wrong.\n".format("-"*80, location, "-"*80))
+            raise
 
-def pull_server_entries2():
-    """Read whatever is currently in the servers.txt file and save the results in the vars.servers dictionary.
-    Updated: also looks through vars.alternate_server_confs"""
-    def _pull_entries(server_conf):
-        servers = ServersDict()
-        for section in servers_conf.sections():
-            servers[section] = {}
-            for (key, val) in servers_conf.items(section):
-                if key == "domains":
-                    val = eval(str(val))
-                elif key == "is-webfaction-server":
-                    val = bool(eval(str(val)))
-                servers[section][key] = val
-
-    vars.servers = _pull_entries(vars.servers_conf)
-    for conf in vars.alternate_server_confs:
-        raise NotImplementedError
+    smash_vars.servers = pull_entries(smash_vars.servers_conf)
+    for conf in smash_vars.alternate_server_confs:
+        smash_vars.servers.extend( pull_entries(conf) )
 
 def push_server_entries():
-    """ saves whatever is in the vars.servers dictionary to the servers.txt file """
+    """ saves whatever is in the smash_vars.servers dictionary to the servers.txt file """
     conf = configparser.ConfigParser()
-    for section in vars.servers.keys():
+    for section in smash_vars.servers.keys():
         conf[section] = {}
-        for data, v in vars.servers[section].items():
-            for (key, val) in vars.servers[section].items():
+        for data, v in smash_vars.servers[section].items():
+            for (key, val) in smash_vars.servers[section].items():
                 conf[section][key] = str(val)
 
-    vars.servers_conf = conf
-    with vars.servers_conf_loc.open('w') as configfile:
+    smash_vars.servers_conf = conf
+    with smash_vars.servers_conf_loc.open('w') as configfile:
         conf.write(configfile)
 
 
 def can_ftp_login(host, user, password):
     """ returns if we can login to a ftp account with the provided credentials """
-    ip = socket.gethostbyname(domains.normalize_domain(host)) ############
+    import ftplib
+    from lib import dns
+    ip = dns.get_ip_address(domains.normalize_domain(host))
     try:
         ftplib.FTP(ip, user, password)
     except (ftplib.error_reply, ftplib.error_temp, ftplib.error_perm):
@@ -240,7 +256,7 @@ def can_ssh_login(host, user, password):
     try:
         if os.name == "nt":
             cmd = 'putty -ssh {}@{} -pw {} echo "hi" '.format(user, host, password)
-            if vars.verbose:
+            if smash_vars.verbose:
                 print("executing", cmd)
             subprocess.check_output(cmd)
         else:

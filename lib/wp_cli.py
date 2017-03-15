@@ -1,7 +1,7 @@
 from contextlib import redirect_stdout, redirect_stderr
 import io, sys, subprocess, os.path
 
-from runner import vars
+from runner import smash_vars
 import lib.errors
 from lib import ssh
 from lib import webfaction
@@ -10,9 +10,10 @@ from lib import servers
 def run(server, app, cmd):
     """runs a wp_cli command installing wp_cli if it is not installed """
 
-    wf, wf_id = webfaction.connect(server)
+    #wf, wf_id = webfaction.connect(server)
     cmd2 = "test -e " + _root_dir(server, app)+"/wp-cli.phar" + " && echo Exists"
-    wp_cli_exists = wf.system(wf_id, cmd2).strip()
+    #wp_cli_exists = wf.system(wf_id, cmd2).strip()
+    wp_cli_exists = ssh.run2(server, cmd2).strip()
 
     if wp_cli_exists:
         return run2(server, app, cmd)

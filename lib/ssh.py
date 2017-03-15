@@ -2,9 +2,10 @@ import subprocess
 import os
 import lib.servers
 import lib.domains
-from runner import vars
+from runner import smash_vars
 from pathlib import Path
 from lib import webfaction
+from lib import errors
 
 def get_command(*args, dont_execute=True, **kwargs):
     """ same as the run function, but returns the resulting ssh command instead of executing it """
@@ -18,7 +19,7 @@ def run(server, command, dont_execute=False, raise_errors=True, shell=True):
     command = command.replace('"', '\\"')
 
     if "localhost" in lib.servers.get(server, "domains") or "127.0.0.1" in lib.servers.get(server, "domains"):
-        if vars.verbose:
+        if smash_vars.verbose:
             print("executing:", command)
         if dont_execute:
             return command
@@ -58,13 +59,13 @@ def run(server, command, dont_execute=False, raise_errors=True, shell=True):
             #raise an error so we can return enter the except clause and return the alternate ssh command if putty is not installed
             subprocess.check_output("which putty")
             return cmd
-        if vars.verbose:
+        if smash_vars.verbose:
             print("executing:", cmd)
         subprocess.run(cmd, shell=shell)
     except (FileNotFoundError, subprocess.CalledProcessError):
         #if putty is not installed, run the normal ssh command and the user will have to type in the password on the command line
         cmd = 'ssh {s_user}@{s_host} "{command}"'.format(**locals())
-        if vars.verbose:
+        if smash_vars.verbose:
             print("nevermind, that command failed. Executing", cmd)
         print("use the password {s_passwd} when prompted".format(**locals()))
 
@@ -80,7 +81,7 @@ def run2(server, command, shell=True):
     command = command.replace('"', '\\"')
 
     if "localhost" in lib.servers.get(server, "domains") or "127.0.0.1" in lib.servers.get(server, "domains"):
-        if vars.verbose:
+        if smash_vars.verbose:
             print("executing:", command)
         stdout_fh = io.StringIO()
         stderr_fh = io.StringIO()
@@ -91,7 +92,7 @@ def run2(server, command, shell=True):
         error_msg = error_msg.replace("stdin: is not a tty", "")
         error_msg = error_msg.strip()
         if error_msg:
-            raise Exception(error_msg)
+            raise errors.SSHError(error_msg)
         return stdout_fh.getvalue()
 
     s = lib.servers.get(server)
@@ -101,7 +102,7 @@ def run2(server, command, shell=True):
 
     if os.name == "nt":
         if command:
-            cmd = 'plink -ssh {s_user}@{s_host} -pw {s_passwd} "{command}"'.format(**locals())
+            cmd = 'plink -ssh {s_user}@{s_host} -pw "{s_passwd}" "{command}"'.format(**locals())
         else:
             cmd = 'putty -ssh {s_user}@{s_host} -pw {s_passwd} "{command}"'.format(**locals())
 
@@ -123,13 +124,13 @@ def run2(server, command, shell=True):
 
     try:
         try:
-            if vars.verbose:
+            if smash_vars.verbose:
                 print("executing:", cmd)
             proc = subprocess.Popen(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, shell=True)
         except (FileNotFoundError, subprocess.CalledProcessError):
             #if putty is not installed, run the normal ssh command and the user will have to type in the password on the command line
             cmd = 'ssh {s_user}@{s_host} "{command}"'.format(**locals())
-            if vars.verbose:
+            if smash_vars.verbose:
                 print("nevermind, that command failed. Executing", cmd)
             print("use the password {s_passwd} when prompted".format(**locals()))
 
@@ -146,7 +147,7 @@ def run2(server, command, shell=True):
                 print(cmd)
                 print("-"*79)
                 print()
-                raise Exception(ssh_error_msg)
+                raise errors.SSHError(ssh_error_msg)
         raise
 
     if proc.stderr:
@@ -160,6 +161,6 @@ def run2(server, command, shell=True):
             print(cmd)
             print("-"*79)
             print()
-            raise Exception(ssh_error_msg)
+            raise errors.SSHError(ssh_error_msg)
 
     return b"".join(proc.stdout.readlines()).decode("utf-8")

@@ -1,6 +1,6 @@
 import os, os.path, base64
 import lxml.etree
-from runner import vars
+from runner import smash_vars
 from lib._passwords import common
 import lib.errors
 

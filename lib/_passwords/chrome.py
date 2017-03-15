@@ -1,7 +1,7 @@
 import os, os.path, sys, sqlite3
 from pathlib import Path
 
-from runner import vars
+from runner import smash_vars
 import lib.errors
 from lib.errors import SmashException
 from lib._passwords import common
@@ -27,17 +27,17 @@ def find(search_term, search_term2=None):
             query_results = query_logins_db()
         except sqlite3.OperationalError:
 
-            if vars.verbose:
+            if smash_vars.verbose:
                 print("copying logins database to get around it being locked by a running chrome process\n")
 
             import shutil
             src = str(Path(path) / "Login Data")
-            dest = str( vars.storage_dir / "Login Data" )
+            dest = str( smash_vars.storage_dir / "Login Data" )
             shutil.copy(src, dest)
             if os.name == 'nt':
-                path = str(vars.storage_dir) + "\\"
+                path = str(smash_vars.storage_dir) + "\\"
             else:
-                path = str(vars.storage_dir) + "/"
+                path = str(smash_vars.storage_dir) + "/"
 
             query_results = query_logins_db()
 

@@ -2,7 +2,7 @@ import os
 
 import lib.drive
 import lib.password_creator
-from runner import vars
+from runner import smash_vars
 from lib.errors import SmashException
 
 def encrypt(password):
@@ -17,7 +17,7 @@ def encrypt(password):
         except:
             raise SmashException("Python Extensions not installed. Install from https://sourceforge.net/projects/pywin32/files/pywin32/Build%20220/ \nCheck if Python is running in 32bit or 64bit mode and the Python version being run, and then install the appropriate python extension")
 
-        drive_dir = vars.google_drive_smash_utils_dir
+        drive_dir = smash_vars.google_drive_smash_utils_dir
         key_file = drive_dir / "lastpass-key-part1"
 
         if not key_file.is_file():
@@ -34,7 +34,7 @@ def encrypt(password):
 
         return encoded2
     else:
-        drive_dir = vars.google_drive_smash_utils_dir
+        drive_dir = smash_vars.google_drive_smash_utils_dir
         key_file = drive_dir / "lastpass-key-part1"
 
         if not key_file.is_file():
@@ -61,7 +61,7 @@ def unencrypt(password):
             raise SmashException("Python Extensions not installed")
 
         try:
-            key_file = vars.google_drive_smash_utils_dir / "lastpass-key-part1"
+            key_file = smash_vars.google_drive_smash_utils_dir / "lastpass-key-part1"
             key = key_file.read_text()
         except FileNotFoundError:
             raise SmashException("Could not find the LastPass Password decryption Key in Google Drive. Run smash-utils with the --new-credentials flag to regenerate the key")
@@ -77,7 +77,7 @@ def unencrypt(password):
 
     else:
         try:
-            key_file = vars.google_drive_smash_utils_dir / "lastpass-key-part1"
+            key_file = smash_vars.google_drive_smash_utils_dir / "lastpass-key-part1"
             key = key_file.read_text()
         except FileNotFoundError:
             raise SmashException("Could not find the LastPass Password decryption Key in Google Drive. Run smash-utils with the --new-credentials flag to regenerate the key")

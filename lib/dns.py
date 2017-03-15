@@ -1,7 +1,7 @@
 """ Gets info from a nslookup and gets whois info """
 import os, socket, subprocess
 import lib.whois
-from runner import vars
+from runner import smash_vars
 from lib import domains
 from lib import errors
 
@@ -31,11 +31,12 @@ def get_whois_dict(domain):
 
 def get_web_host(domain):
     try:
-        cmd = 'nslookup -type=ptr %s'  % socket.gethostbyname(domain)
-        res = subprocess.check_output( cmd, shell=True ).decode("utf-8")
-        res = res[res.find("name") : ]
-        _, res = res.split("=")
-        webhost = res.strip()
+        with redirect_stdout(stdout_fh): #preventing extra output that subprocess.check_output seems to fail to catch from being outputted
+            cmd = 'nslookup -type=ptr {}'.format(socket.gethostbyname(domain))
+            res = subprocess.check_output( cmd, shell=True ).decode("utf-8")
+            res = res[res.find("name") : ]
+            _, res = res.split("=")
+            webhost = res.strip()
     except:
         webhost = None
 
@@ -44,7 +45,7 @@ def get_web_host(domain):
 def get_email_server(domain):
     #Does not take into account the fact that there could be multiple email servers in the MX records
     email_server = None
-    cmd = 'nslookup -type=mx %s'  % domain
+    cmd = 'nslookup -type=mx {}'.format(domain)
     res = subprocess.check_output( cmd ).decode("utf-8")
     if res.find("mail exchanger") > 0:
         try:

@@ -6,7 +6,7 @@ import oauth2client
 from oauth2client import client
 from oauth2client import tools
 
-from runner import vars
+from runner import smash_vars
 
 flags = tools.argparser.parse_args(args=["--logging_level", "DEBUG"]) #these flags can be found at http://oauth2client.readthedocs.io/en/latest/source/oauth2client.tools.html#oauth2client.tools.run_flow. The following flag is not mentioned, but can be used as well --logging_level {DEBUG,INFO,WARNING,ERROR,CRITICAL}
 
@@ -20,13 +20,13 @@ def get_credentials():
     creates the file if it does not exist
     use the -v flag to recreate the credentials file
     """
-    drive_dir = vars.storage_dir / 'google-drive'
+    drive_dir = smash_vars.storage_dir / 'google-drive'
     if not drive_dir.exists():
         drive_dir.mkdir()
     client_secret_loc = drive_dir / 'client_secret.json'
 
     store = oauth2client.file.Storage(str(client_secret_loc))
-    if vars.new_credentials:
+    if smash_vars.new_credentials:
         try:
             store.delete() #if any changes are made to the client secret file, you'll need to delete the file so it can be recreated. The store.delete() command does this.
         except FileNotFoundError:
@@ -38,7 +38,7 @@ def get_credentials():
 "client_id": "482103717697-qbfptkbld9gnb5vrfsal9h7csss8vejm.apps.googleusercontent.com",
 "project_id": "pristine-lodge-142220",
 "auth_provider_x509_cert_url": "https://www.googleapis.com/oauth2/v1/certs",
-"client_secret": "''' + vars.google_drive_client_secret + '''",
+"client_secret": "''' + smash_vars.google_drive_client_secret + '''",
 "redirect_uris": ["urn:ietf:wg:oauth:2.0:oob","http://localhost"],
 "auth_uri": "https://accounts.google.com/o/oauth2/auth",
 "token_uri": "https://accounts.google.com/o/oauth2/token"
@@ -48,7 +48,7 @@ def get_credentials():
             f.write(client_secret_contents)
 
     store = oauth2client.file.Storage('drive.storage')
-    if vars.new_credentials:
+    if smash_vars.new_credentials:
         store.delete()
     credentials = store.get()
     if not credentials or credentials.invalid:
@@ -106,7 +106,7 @@ def create_folder(path):
       'mimeType' : 'application/vnd.google-apps.folder'
     }
     file = service.files().create(body=file_metadata, fields='id').execute()
-    if vars.verbose:
+    if smash_vars.verbose:
         print( 'Created Google Drive folder with the ID: %s' % file.get('id') )
 
     return file

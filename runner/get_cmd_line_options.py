@@ -60,10 +60,15 @@ servers.add_argument("--db-migrate", nargs="*", default="", metavar=["from_websi
 servers.add_argument("--staging", nargs="*", default="", metavar=["from_website", "to_website"], help="same as --migrate, but a new website is created if it doesn't exist ")
 servers.add_argument("--restore", nargs="*", default="", metavar=["server-entry", "server-directory", "sql-dump", "backup.tar.gz"], help="restores a backup. server-directory can also be a webfaction app. A website wil be created for the app if the app does not exist.")
 
-smash.add_argument("--add-site", "--add-website", nargs="*", metavar=("search_method", "search_term"), help="Add a website to Smash Utils")
+SITE_SERVER_CHOICES = ("info", "add", "remove", "edit")
+smash.add_argument("--server", nargs="*", metavar=["["+"|".join(SITE_SERVER_CHOICES)+"]", "server" ], action=runner.help_formatter.choices(SITE_SERVER_CHOICES), help="manage utils for a server")
+#smash.add_argument("--server", choices=["info", "add", "remove", "edit"], nargs="*", action=runner.help_formatter.make_action([sys.argv.pop() for arg in sys.argv if is_site_server_cmd() and arg not in SITE_SERVER_CHOICES]))
+#smash.add_argument("--site", choices=["info", "add", "remove", "edit"])
+smash.add_argument("--list-servers", action="store_true",  help="Lists all of the servers that have been added to your smash-utils installation. Run '--server info' to see more info about a server")
+smash.add_argument("--add", "--add-site", "--add-website", nargs="*", metavar=("search_method", "search_term"), help=argparse.SUPPRESS)
 smash.add_argument("--edit-sites", "--edit-websites", action="store_true", help="Edits the data Smash Utils has stored about a website")
 smash.add_argument("--site", "--website", "--sites", "--websites", nargs="?", default=None, metavar="domain", help="Displays info about a website stored by Smash Utils")
-smash.add_argument("--server", "--servers", nargs="?", default=None, metavar="server", help="Same as the --site command, but looks up data by the server name. Will display data for all servers if nothing is passed in.")
+#smash.add_argument("--server", "--servers", nargs="?", default=None, metavar="server", help="Same as the --site command, but looks up data by the server name. Will display data for all servers if nothing is passed in.")
 
 general.add_argument("--db", nargs="*", default="", metavar="website", help="Grabs database credentials from the site's wp-config.php file")
 general.add_argument("--dns", nargs="*", default="", const=None, metavar=("domain.com", "output.txt"), help="Does a DNS lookup and optionally saves the results to a text file")
@@ -80,6 +85,7 @@ maintenance.add_argument("--performance", nargs="+", metavar=("domain", "output 
 maintenance.add_argument("--ssl", nargs="?", metavar="domain", help="Checks if either a domain's ssl certificate is expiring soon, or if a webfaction server entry is passed in, checks all of the domains on that server")
 maintenance.add_argument("--add-ssl", "--add-ssl-cert", "--add-ssl-certificate", nargs="?", metavar="domain", help="Uses letsencrypt to add a new SSL certificate")
 maintenance.add_argument("--wpw", nargs="*", default=[], metavar=("client name", "level of warranty (1, 2, or 3)"), help="Performs part of the initial setup for a new WordPress Warranty client.")
+maintenance.add_argument("--conf", nargs="?", metavar="website", help="Generally you don't need to run this command. The --wpw command takes care of everything this one does. If a website is passed in a conf file is generated for that website, otherwise the servers conf is updated based on all of the individual website conf files.")
 
 passwords.add_argument("--chrome", nargs="?", default="", metavar="search-term", help="Searches Google Chrome for passwords")
 passwords.add_argument("--filezilla", "--fz", nargs="?", default="", metavar="entry", help="Filezilla's interface hides passwords, but if you provide the name from Filezilla's site manager, I'll tell you the password")
@@ -87,7 +93,7 @@ passwords.add_argument("--ftp", metavar="search-term", help="search the server e
 passwords.add_argument("--lastpass", "--lp", nargs="*", default="", metavar=("search-term", "optional-additional-term"), help="Searches Lastpass for passwords. Search results can be drilled down with a second search term.")
 passwords.add_argument("--passwords", "--pass", nargs="?", default="", metavar="search-term", help="Searches Lastpass, Filezilla, and Chrome for passwords")
 
-other.add_argument("-h", "--help", action="help", help="pass in an action to --help to get help on it")
+other.add_argument("-h", "--help", action="help", help="pass in an action to get help on it")
 other.add_argument("--new-credentials", help="whenever this script uses credentials, do not reuse saved credentials. You will be prompted for new credentials and the old one will be overwritten.", action="store_true")
 other.add_argument("--setup", "--install", action="store_true", help="Runs through the initial setup of this script")
 other.add_argument("--smash-update", '--update-smash-utils', help="updates this script", action="store_true")

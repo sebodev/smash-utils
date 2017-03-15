@@ -1,20 +1,20 @@
-from runner import vars
+from runner import smash_vars
 from lib import servers
 from lib import webfaction
 import lib.errors
 
 def normalize_domain(website):
     """ returns the domain for a given website """
-    return website.replace("http://", "").replace("https://", "").lstrip("www.").rstrip("/")
+    return website.replace("http://", "").replace("https://", "").replace("www.", "").rstrip("/")
 
 def get_sever(domain):
     return info(domain)[1]
     """ If this is a Webfaction app, return the name of the server, otherwise returns None """
 
-def get_sever_app(domain):
+def get_server_app(domain, create_if_needed=True):
     """ Returns the tuple (server, app)
     If this is not a Webfaction server, server and app will be None """
-    return info(domain)[1:2]
+    return info(domain, create_if_needed)[1:3]
 
 def get_severObj_server_app(domain):
     """ Returns the tuple (server, app)
@@ -22,14 +22,14 @@ def get_severObj_server_app(domain):
     return info(domain)
 
 def info(domain_or_server, create_if_needed=True):
-    """ Deprecated use get_severObj_server_app(), get_sever_app(), or get_sever()
+    """ Deprecated use get_severObj_server_app(), get_server_app(), or get_sever()
     Returns the tuple (server_info, server, app)
     If this is not a Webfaction server, server and app will be None
     server_info will be a dictionary of credentials for the server """
     domain = normalize_domain(domain_or_server)
     server_info = server = app = None
 
-    if domain_or_server in vars.servers:
+    if domain_or_server in smash_vars.servers:
         server = domain_or_server
         try:
             app = webfaction.get_webapps(server, domain)
@@ -37,7 +37,7 @@ def info(domain_or_server, create_if_needed=True):
             app = None
         if app:
             app = app[0]
-        if vars.verbose:
+        if smash_vars.verbose:
             print("domain", domain, "maps to the server", server, "and the app", app)
     elif webfaction.is_webfaction_domain(domain):
         server = webfaction.get_server(domain)
@@ -48,19 +48,19 @@ def info(domain_or_server, create_if_needed=True):
                 app = None
             if app:
                 app = app[0]
-            if vars.verbose:
+            if smash_vars.verbose:
                 print("domain", domain, "maps to the server", server, "and the app", app)
-        elif webfaction.can_login(domain) and domain in vars.servers:
+        elif webfaction.can_login(domain) and domain in smash_vars.servers:
             server = domain_or_server
     else:
-        for server_name, s in vars.servers.items():
+        for server_name, s in smash_vars.servers.items():
             ds = s.get("domains")
             if ds:
                 for d in ds:
                     if d == domain:
                         server = server_name
-        if not server: #I don't think thse two lines should be here, but I'm not sure
-            server = domain_or_server
+        #if not server: #I don't think thse two lines should be here, but I'm not sure
+        #    server = domain_or_server
 
     if not server and app: #see if this is a subdomain of a domain we have info about
         parent = parent_domain(server)
@@ -92,7 +92,7 @@ def refresh_domains_cache():
     If no domains can be found for a server (this will happen with any non-webfaction server),
     whatever was previously in the cache will remain in the cache """
     print("\nRefreshing domain info...")
-    for server_name, server in vars.servers.items():
+    for server_name, server in smash_vars.servers.items():
         ds = None
         try:
             if server["is-webfaction-server"]:

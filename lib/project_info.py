@@ -1,21 +1,21 @@
-""" this module is for getting info about the projects inside of vars.projects_root_dir """
+""" this module is for getting info about the projects inside of smash_vars.projects_root_dir """
 
 from pathlib import Path
-from runner import vars
+from runner import smash_vars
 
 def get_project_from_dir(the_dir):
     ''' returns which project a directory is inside of or None'''
-    if not vars.projects_root_dir:
+    if not smash_vars.projects_root_dir:
         return None
     try:
-        return Path(the_dir).resolve().relative_to(vars.projects_root_dir).parent
+        return Path(the_dir).resolve().relative_to(smash_vars.projects_root_dir).parent
     except ValueError:
         return None
 
 def info(project, theme=None, user=None):
     '''deprecated: returns a dictionary of info about a project'''
 
-    project_dir = vars.projects_root_dir / (project or '')
+    project_dir = smash_vars.projects_root_dir / (project or '')
     if not theme:
         theme = project
     if theme != project:

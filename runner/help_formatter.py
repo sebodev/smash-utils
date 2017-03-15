@@ -60,3 +60,28 @@ class Formatter(argparse.HelpFormatter):
         section = self._Section(self, self._current_section, heading)
         self._add_item(section.format_help, [])
         self._current_section = section
+
+def make_action(additional_args):
+    """Adds the args passed in to the list of argparse args """
+    class customAction(argparse.Action):
+        def __call__(self, parser, args, values, option_string=None):
+            values.extend(additional_args)
+            setattr(args, self.dest, values)
+    return customAction
+
+def choices(choices_list):
+    """Uses choices list for the first arg passed in, other args can be anything """
+    class ChoicesWithNargs(argparse.Action):
+        CHOICES = choices_list
+        def __call__(self, parser, namespace, values, option_string=None):
+            if values:
+                value = values[0]
+                if value not in self.CHOICES:
+                    message = ("invalid choice: {0!r} (choose from {1})"
+                               .format(value,
+                                       ', '.join([repr(action)
+                                                  for action in self.CHOICES])))
+
+                    raise argparse.ArgumentError(self, message)
+            setattr(namespace, self.dest, values)
+    return ChoicesWithNargs

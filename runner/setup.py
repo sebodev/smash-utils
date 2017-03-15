@@ -12,7 +12,7 @@ keep track if first or repeat time running setup and prompt what to reconfigure 
 import os, os.path, subprocess, configparser, getpass
 from pathlib import Path
 
-from runner import vars
+from runner import smash_vars
 try:
     import lib.lastpass
 except ImportError:
@@ -64,35 +64,35 @@ def save_locations():
         if not os.path.exists(google_drive_dir):
             raise Exception(google_drive_dir + " does not exist")
 
-    if not vars.sebo_conf.has_section('locations'):
-        vars.sebo_conf.add_section('locations')
-    if not vars.sebo_conf.has_section('setup_info'):
-        vars.sebo_conf.add_section('setup_info')
+    if not smash_vars.sebo_conf.has_section('locations'):
+        smash_vars.sebo_conf.add_section('locations')
+    if not smash_vars.sebo_conf.has_section('setup_info'):
+        smash_vars.sebo_conf.add_section('setup_info')
 
-    vars.sebo_conf.set("locations", "project_dir", project_dir)
+    smash_vars.sebo_conf.set("locations", "project_dir", project_dir)
     if google_drive_dir:
-        vars.sebo_conf.set("locations", "google_drive", google_drive_dir)
+        smash_vars.sebo_conf.set("locations", "google_drive", google_drive_dir)
 
-    vars.sebo_conf.set("locations", "stored_data", vars.storage_dir)
-    vars.sebo_conf.set("setup_info", "setup_ran", "True")
+    smash_vars.sebo_conf.set("locations", "stored_data", smash_vars.storage_dir)
+    smash_vars.sebo_conf.set("setup_info", "setup_ran", "True")
 
     try:
         if os.name == "nt":
-            version = subprocess.check_output("cd /d {} && cd {} && git rev-parse --verify HEAD".format(vars.script_dir.drive, vars.script_dir), shell=True)
+            version = subprocess.check_output("cd /d {} && cd {} && git rev-parse --verify HEAD".format(smash_vars.script_dir.drive, smash_vars.script_dir), shell=True)
         else:
-            version = subprocess.check_output("cd {} && git rev-parse --verify HEAD".format(vars.script_dir.drive, vars.script_dir), shell=True)
-        vars.sebo_conf.set("setup_info", "version_setup_run", version.decode("utf-8"))
+            version = subprocess.check_output("cd {} && git rev-parse --verify HEAD".format(smash_vars.script_dir.drive, smash_vars.script_dir), shell=True)
+        smash_vars.sebo_conf.set("setup_info", "version_setup_run", version.decode("utf-8"))
     except:
         pass
 
-    with vars.sebo_conf_loc.open('w') as configfile:
-        vars.sebo_conf.write(configfile)
-    vars.save_sebo_conf_vars()
+    with smash_vars.sebo_conf_loc.open('w') as configfile:
+        smash_vars.sebo_conf.write(configfile)
+    smash_vars.save_sebo_conf_vars()
 
 def check_path():
     path = os.environ["PATH"]
-    if str(vars.script_dir) not in path:
-        input("Add {} to the system path, and then hit enter to continue".format(vars.script_dir))
+    if str(smash_vars.script_dir) not in path:
+        input("Add {} to the system path, and then hit enter to continue".format(smash_vars.script_dir))
 
 def install_dependencies():
     input("If not already installed, install nodejs from {} and push enter to continue".format("https://nodejs.org/en/download"))
@@ -116,7 +116,7 @@ def install_dependencies():
 
 def main():
     assert sys.version_info >= (3,5), "Big fat mean me says you have to be running Python 3.5+. You are currently running version {}".format(sys.version_info)
-    if vars.installed:
+    if smash_vars.installed:
         print("welcome back to the installer. What would you like to reconfigure?")
         print()
         print("type 'dependencies' to install the dependencies")

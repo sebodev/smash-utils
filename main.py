@@ -14,7 +14,7 @@ def install_vs_build_tools():
   subprocess.run(tmp_file)
 
 try:
-  import runner.vars
+  import runner.smash_vars
 except ImportError:
   try:
     import Crypto #Make sure the import error was coming from trying to import the Crypto module which the lastpass package depends on
@@ -51,7 +51,7 @@ except ImportError:
           #install_vs_build_tools()
         else:
           raise
-      import runner.vars
+      import runner.smash_vars
     else:
       raise
 
@@ -66,14 +66,14 @@ except ImportError:
       else:
           subprocess.check_output("pip3 install httplib2 --upgrade") #this line may not be needed
           subprocess.run("pip3 install --upgrade google-api-python-client")
-      import runner.vars
+      import runner.smash_vars
     else:
       raise
   else:
     raise
 
 
-if runner.vars.installed != "True":
+if runner.smash_vars.installed != "True":
     if "--setup" not in sys.argv:
         print("Hello matey, it looks like this is your first time running smash-utils. Let me pass you on over to the installer")
     import runner.setup

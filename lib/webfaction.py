@@ -1,7 +1,7 @@
 import xmlrpc.client
 import configparser
 
-from runner import vars
+from runner import smash_vars
 import lib.errors
 from lib import dns
 from lib import domains
@@ -19,12 +19,12 @@ def connect(server, version=1):
         current_account = account_cache[server]
         return xmlrpc_cache[server]
 
-    username = vars.servers[server]["ssh-username"]
-    password = vars.servers[server]["ssh-password"]
-    if "webfaction-username" in vars.servers[server].keys():
-        username = vars.servers[server]["webfaction-username"]
-    if "webfaction-password" in vars.servers[server].keys():
-        password = vars.servers[server]["webfaction-password"]
+    username = smash_vars.servers[server]["ssh-username"]
+    password = smash_vars.servers[server]["ssh-password"]
+    if "webfaction-username" in smash_vars.servers[server].keys():
+        username = smash_vars.servers[server]["webfaction-username"]
+    if "webfaction-password" in smash_vars.servers[server].keys():
+        password = smash_vars.servers[server]["webfaction-password"]
 
     webfaction, wf_id = connect2(username, password, version)
 
@@ -36,7 +36,7 @@ def connect(server, version=1):
 def connect2(username, password, version=1):
     global current_account
 
-    if vars.verbose:
+    if smash_vars.verbose:
         print("logging into webfaction with the credentials {} and {}".format(username, password))
 
     try:
@@ -92,7 +92,7 @@ def get_server(domain):
     Webfaction accounts with incorrect login info are ignored """
 
     #method1
-    for server_name, server in vars.servers.items():
+    for server_name, server in smash_vars.servers.items():
         ds = server.get("domains")
         if ds:
             for d in ds:
@@ -100,13 +100,13 @@ def get_server(domain):
                     return server_name
 
     #method2
-    if vars.verbose:
+    if smash_vars.verbose:
         print("checking all of the Webfaction servers for the domain {}".format(domain))
-    for server in vars.servers.keys():
+    for server in smash_vars.servers.keys():
         if servers.get(server, "is-webfaction-server"):
             try:
                 domains = get_domains(server)
-                vars.servers[server]["domains"] = domains #this is so we will be able to update the cached server entries
+                smash_vars.servers[server]["domains"] = domains #this is so we will be able to update the cached server entries
                 if domain in domains:
                     servers.push_server_entries() #update the cached server entries
                     return server
@@ -146,7 +146,7 @@ def get_webserver2(username, password):
     return current_account["web_server"].lower() + ".webfaction.com"
 
 def can_login(server):
-    if server not in vars.servers:
+    if server not in smash_vars.servers:
         return False
     try:
         connect(server)

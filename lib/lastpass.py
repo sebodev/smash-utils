@@ -7,17 +7,17 @@ from lib import passwords
 
 #import sys
 #sys.path.append(r"D:\projects\smash-utils\runner")
-from runner import vars
+from runner import smash_vars
 
-lastpass_username = vars.credentials_conf.get('lastpass', 'username', fallback=None)
-lastpass_password = vars.credentials_conf.get('lastpass', 'password', fallback=None)
-if vars.new_credentials:
+lastpass_username = smash_vars.credentials_conf.get('lastpass', 'username', fallback=None)
+lastpass_password = smash_vars.credentials_conf.get('lastpass', 'password', fallback=None)
+if smash_vars.new_credentials:
     lastpass_username = lastpass_password = None
 accounts_cache = None
 
 def _prompt_for_credentials():
     global lastpass_username, lastpass_password
-    if not lastpass_username or vars.new_credentials:
+    if not lastpass_username or smash_vars.new_credentials:
         lastpass_username = input("What's your lastpass username (your sebodev email): ")
         save_username(lastpass_username)
 
@@ -26,7 +26,7 @@ def _prompt_for_credentials():
     except lib.errors.SmashException:
         lastpass_password = None
 
-    if not lastpass_password or vars.new_credentials:
+    if not lastpass_password or smash_vars.new_credentials:
         lastpass_password = getpass.getpass("what's your lastpass password: ") #getpass behaves like input(), except the user input is not displayed on the screen
         save_password(lastpass_password)
 
@@ -67,14 +67,14 @@ def save_username(username):
     global lastpass_username
     lastpass_username = username
     try:
-        vars.credentials_conf.set("lastpass", "username", lastpass_username)
-        with vars.credentials_conf_loc.open('w') as configfile:
-            vars.credentials_conf.write(configfile)
+        smash_vars.credentials_conf.set("lastpass", "username", lastpass_username)
+        with smash_vars.credentials_conf_loc.open('w') as configfile:
+            smash_vars.credentials_conf.write(configfile)
     except configparser.NoSectionError:
-        vars.credentials_conf.add_section("lastpass")
-        vars.credentials_conf.set("lastpass", "username", lastpass_username)
-        with vars.credentials_conf_loc.open('w') as configfile:
-            vars.credentials_conf.write(configfile)
+        smash_vars.credentials_conf.add_section("lastpass")
+        smash_vars.credentials_conf.set("lastpass", "username", lastpass_username)
+        with smash_vars.credentials_conf_loc.open('w') as configfile:
+            smash_vars.credentials_conf.write(configfile)
 
 def save_password(password):
     """encrypts and saves password to a config file
@@ -82,17 +82,17 @@ def save_password(password):
 
     encoded2 = encoder.encrypt(password)
 
-    vars.credentials_conf.set('lastpass', 'password', encoded2)
+    smash_vars.credentials_conf.set('lastpass', 'password', encoded2)
 
-    with vars.credentials_conf_loc.open('w') as configfile:
-        vars.credentials_conf.write(configfile)
+    with smash_vars.credentials_conf_loc.open('w') as configfile:
+        smash_vars.credentials_conf.write(configfile)
 
 def retrieve_password():
     """retrieves a password saved with save_password
     may raise lib.error.SmashException
     only works on windows"""
 
-    password = vars.credentials_conf.get('lastpass', 'password', fallback=None)
+    password = smash_vars.credentials_conf.get('lastpass', 'password', fallback=None)
     if not password:
         return
 

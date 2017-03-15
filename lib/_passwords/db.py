@@ -1,12 +1,15 @@
 import ftplib
 from pathlib import Path
-from runner import vars
+from runner import smash_vars
 import lib.lastpass
 import lib.passwords
 from lib.errors import SmashException
 import lib.webfaction
 from lib._passwords import common
 import lib.errors
+from lib import servers
+from lib import wp_cli
+from lib import domains
 
 def find_with_ftp_search(domain, wp_config_folder):
     #wp_config_folder = "webapps/cdcutah"
@@ -28,17 +31,27 @@ def find(server_entry, root_folder):
         else:
             raise lib.errors.SmashException("cannot find db info becuase root_folder was empty")
 
-    host = vars.servers[server_entry]["host"]
-    user = vars.servers[server_entry]["ftp-username"]
-    password = vars.servers[server_entry]["ftp-password"]
-    return find2(root_folder, host, user, password)
+    host = servers.get(server_entry, "host", False)
+    user = servers.get(server_entry, "ftp-username", False)
+    password = servers.get(server_entry, "ftp-password", False)
+
+    try:
+        return find2(root_folder, host, user, password)
+    except lib.errors.CredentialsNotFound:
+        name = wp_cli.run(server_entry, root_folder, "eval 'echo DB_NAME;'")
+        host = wp_cli.run(server_entry, root_folder, "eval 'echo DB_HOST;'")
+        user = wp_cli.run(server_entry, root_folder, "eval 'echo DB_USER;'")
+        password = wp_cli.run(server_entry, root_folder, "eval 'echo DB_PASSWORD;'")
+        return (name, host, user, password)
+        #name, host, user, password = wp_cli.run(server_entry, root_folder, """eval 'echo DB_Name",". echo DB_HOST",". echo DB_USER",". echo DB_PASSWORD",". ;'""").split(",")
 
 def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
     """ finds the database credentials
     wp_config_folder is relative to the directory that first opens up when you ftp into the server
     If this is a webfaction server wp_config_folder can also be a webapp
     returns the tuple (name, host, user, password)"""
-    if vars.verbose:
+    ftp_host = domains.normalize_domain(ftp_host)
+    if smash_vars.verbose:
         print("retreiving db info using the ftp credentials host={} user={} password={}".format(ftp_host, ftp_user, ftp_password))
 
     with ftplib.FTP(ftp_host) as ftp:
@@ -61,7 +74,7 @@ def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
                 except:
                     pass
 
-                assert(wp_config_folder in vars.servers)
+                assert(wp_config_folder in smash_vars.servers)
                 wf, wf_id = lib.webfaction.connect(wp_config_folder) #Todo need to be able to map the host to the webfaction conf entry
                 apps = wf.list_apps(wf_id)
                 apps = [app["name"] for app in apps]
@@ -76,7 +89,7 @@ def find2(wp_config_folder, ftp_host, ftp_user, ftp_password):
             nonlocal data
             data += block.decode()
 
-        save_file = str(vars.tmp_dir / "ftp_data")
+        save_file = str(smash_vars.tmp_dir / "ftp_data")
         try:
             ftp.retrbinary("RETR " + "wp-config.php", callback)
         except ftplib.error_perm as err:
