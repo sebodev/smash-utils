@@ -43,7 +43,7 @@ elif "--redirect-table" in sys.argv:
     while not new:
         new = input("Enter the new site or the dev site for {}".format(old))
 
-    csv_guess = smash_vars.storage_dir/"redirect_tables"/(normalize_domain(old).replace("/", "").replace("\\", "").replace(".", ""))
+    csv_guess = smash_vars.storage_dir/"redirect_tables"/((normalize_domain(old).replace("/", "").replace("\\", "").replace(".", ""))+".csv")
     if not csv:
         csv = input("Enter a csv file to save the results to. Leave blank for {}".format(csv_guess))
     if not csv:
@@ -185,6 +185,40 @@ elif "--ssh" in sys.argv:
         ssh.run(server, cmd)
     else:
         ssh_session.main(site)
+
+elif "--scp" in sys.argv:
+    from lib import scp
+
+    try:
+        server = args.scp[0]
+    except:
+        server = None
+
+    try:
+        remote = args.scp[1]
+    except:
+        remote = None
+
+    try:
+        local = args.scp[2]
+    except:
+        local = None
+
+    try:
+        recursive = args.scp[3]
+    except:
+        recursive = False
+
+    while not server:
+        server = input("Enter a server: ")
+
+    while not remote:
+        server = input("Enter a remote location to copy from: ")
+
+    while not local:
+        server = input("Enter a local location to copy to: ")
+
+    scp.copy(server, remote, local, recursive)
 
 elif "--hosts" in sys.argv:
     from general_utils import edit_hosts_file

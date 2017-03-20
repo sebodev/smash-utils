@@ -220,7 +220,7 @@ database password: {}
         except lib.errors.SmashException:
             resp = input("I couldn't detect a database on the server. Would you like me to create one [Yes/no]:")
             if not resp.startswith("n"):
-                db_name, db_host, db_user, db_password = create_db(server, server_dir)
+                db_name, db_host, db_user, db_password = create_db(server, input("Enter the database name/user to create: "))
             else:
                 print("Okey dokey. If I could just grab some info from you about the database, and then I'll get out of your hair.")
                 prompt_for_db_info()
@@ -265,7 +265,7 @@ database password: {}
         # else:
         #     db_name, db_host, db_user, db_pass = passwords.db(server, server_dir)
         cmd = 'mv "{}/wp-config.php" "{}/wp-config.php.bckup"'.format(server_dir, server_dir)
-        ssh.run2(cmd)
+        ssh.run2(server, cmd)
         wp_cli.run(server, server_dir, "core config --dbname={db_name} --dbhost={db_host} --dbuser={db_user} --dbpass={db_pass} --dbprefix=wp_")
         #wp_cli.run("core config --dbname={db_name} --dbhost={db_host} --dbuser={db_user} --dbpass={db_pass} --dbprefix=wp_ --extra-php < \"define('WP_DEBUG', true);\"")
 

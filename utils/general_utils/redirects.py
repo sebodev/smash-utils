@@ -55,6 +55,7 @@ def filter_redirects(in_file, out_file, old_domain, new_domain, delimiter="\t"):
 
     exclude_js_css = True
     exclude_images = True
+    exclude_fonts = True
     exclude_misc = True
 
     exclude = []
@@ -62,6 +63,8 @@ def filter_redirects(in_file, out_file, old_domain, new_domain, delimiter="\t"):
         exclude += [".js", ".css"]
     if exclude_images:
         exclude += [".jpg", ".jpeg", ".png", ".gif", ".ico", ".svg"]
+    if exclude_fonts:
+        exclude += [".eot", ".woff", ".ttf", ".woff2"]
     if exclude_misc:
         exclude += [".xml"]
     if smash_vars.verbose:
@@ -107,6 +110,7 @@ def filter_redirects(in_file, out_file, old_domain, new_domain, delimiter="\t"):
     for i, line in enumerate(data):
         skip = False
         url = line[url_column].strip()
+        new_url = url
         if skip_status_not_200 and "200" not in line[status_column] and "OK" not in line[status_column]:
             skip = True
         elif url.startswith("#") or url.startswith("mailto:") or url.startswith("tel:") or url.startswith("javascript:") or url.startswith("sms:"):
@@ -118,7 +122,7 @@ def filter_redirects(in_file, out_file, old_domain, new_domain, delimiter="\t"):
                 skip = True
             else: #somehow we're recieving relative URLs with the beginning slash stripped off
                 new_url = new_domain + "/" + url
-        if new_url in dup_checker:
+        if new_url and new_url in dup_checker:
             skip = True
         else:
             for ext in exclude:
