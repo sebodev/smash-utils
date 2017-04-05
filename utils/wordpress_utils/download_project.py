@@ -15,9 +15,9 @@ def main(site, theme):
     _, server, app_name = domains.info(site)
 
     if not server:
-        server = input('Enter a server entry. Leave blank to use the Sebodev Webfaction server: ')
+        server = input('Enter a server entry. Leave blank to use the wpwarranty Webfaction server: ')
         if not server:
-            server = "sebodev"
+            server = "wpwarranty"
 
     while not app_name:
         app_name = input('Enter the Webfaction app name: ')
@@ -44,23 +44,11 @@ def main(site, theme):
 
     download(server, app_name, theme)
 
-def _change_current_project(project, new_theme=None):
-    '''deprecated. Use project_info.info() instead '''
-    if not project:
-        project = smash_vars.current_project
-    info = project_info.info(project, theme=new_theme, user="sebodev")
-    smash_vars.theme = info["theme"]
-    smash_vars.current_project = info["project"]
-    smash_vars.project_dir = Path(info["project_dir"])
-    smash_vars.webfaction_theme_dir = Path(info["webfaction_theme_dir"])
-    smash_vars.servers_theme_dir = smash_vars.webfaction_theme_dir
-
 def download(server, app, theme_or_plugin):
     """ downloads a theme or plugin from a webfaction server. """
 
     theme = theme_or_plugin
 
-    #_change_current_project(app, theme)
     info = project_info.info(app, theme, webfaction.get_user(server))
     info.update(servers.get(server))
 
@@ -70,8 +58,9 @@ def download(server, app, theme_or_plugin):
 
     wf, wf_id = webfaction.connect(server)
     cmd = "ls /home/{}/webapps/{}/wp-content/plugins/".format(info["user"], app)
-    plugins = wf.system(wf_id, cmd)
-    remote_dir = (os.path.join(info["webfaction_plugins_dir"],theme)) if theme in plugins else str(info["webfaction_theme_dir"]) #TODO this failed with the theme ad because the them-name ad was in the plugin-name advanced-custom-fields-pro
+    #using wf.system of over lib.ssh so we can capture the output
+    plugins = wf.system(wf_id, cmd).split("\n")
+    remote_dir = (os.path.join(info["webfaction_plugins_dir"],theme)) if theme in plugins else str(info["webfaction_theme_dir"])
 
     cmd = "pscp -scp -pw {} -r {}@{}:{} {}".format(info['ftp-password'], info['ftp-username'], info['host'], remote_dir, info["project_dir"])
     if smash_vars.verbose:

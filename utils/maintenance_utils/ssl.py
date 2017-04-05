@@ -91,11 +91,12 @@ def main(domain_or_server=None):
     domain can also be a Webfaction server entry."""
 
     def prompt_install_failed_certs(failed):
+        failed = list(filter(None, failed))
         if not failed:
             return
         print("\n" + "*"*80)
-        import pprint; pprint(failed)
-        print("\nThe following websites need updated SSL certificates: ", ", ".join(failed))
+        failed_domains = [f[1] for f in failed if f]
+        print("\nThe following websites need updated SSL certificates:", ", ".join(failed_domains))
         if not input("Would you like to update these SSL certificates [Yes/no]: ").lower().startswith("n"):
              for server, domain in failed:
                  if servers.get(server, "is-webfaction-server"):
