@@ -28,6 +28,8 @@ def create(website, server=None, app_type=CURRENT_WORDPRESS_VERSION):
         server = "sebodev"
     if "sitesmash.com" in website:
         server = "sitesmash"
+    if "wordpressoverwatch.com" in website:
+        server = "wpwarranty"
     if not server:
         print(website, "sitesmash.com" in website)
         server = input('Enter the server you would like to use (example sebodev): ')

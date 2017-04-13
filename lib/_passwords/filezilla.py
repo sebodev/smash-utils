@@ -17,6 +17,8 @@ def find(search_term):
 
     ret = []
     for el in matches:
+        if el.tag != "Server": #skip if it's a bookmark
+            continue
         name = el.find("Name").text
         host = el.find("Host").text
         user = el.find("User").text
