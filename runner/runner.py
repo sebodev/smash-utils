@@ -403,7 +403,7 @@ elif "--add-ssl" in sys.argv or "--add-ssl-cert" in sys.argv or "--add-ssl-certi
     while not domain:
         domain = input("Enter a domain: ")
     server, app = get_server_app(domain)
-    ssl.add(server, app)
+    #ssl.add(server, app)
 
 elif "--passwords" in sys.argv or "--pass" in sys.argv:
     from password_utils import all_passwords
@@ -534,6 +534,10 @@ elif ("--wp" in sys.argv or "--wordpress" in sys.argv):
         app_type = args.wordpress[2]
     except IndexError:
         app_type = wordpress_install2.CURRENT_WORDPRESS_VERSION
+
+    if server == "static":
+        server = None
+        app_type = "static"
 
     wordpress_install2.create(site, server, app_type)
 
