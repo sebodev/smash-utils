@@ -17,7 +17,7 @@ def change_password(server, app, username, password):
     """Changes a user's password.
     The email address can be used in place of the username """
     print("If you happen to need to change the password back, you can go into the database and change the password hash back to {}".format(get_password_hash(server, app, username)))
-    wp_cli.run(server, app, "wp user update {} --user_pass={}".format(username, password))
+    wp_cli.run(server, app, "wp user update {} --user_pass='{}'".format(username, password))
 
 def get_password_hash(server, app, username):
     php = username.replace('"', '\\"')

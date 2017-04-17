@@ -59,7 +59,7 @@ except ImportError:
     import lib.drive
   except ImportError:
     if "--setup" in sys.argv:
-      import subprocess
+      import subprocess, os
       if os.name == "nt":
           subprocess.check_output("pip install httplib2 --upgrade") #this line may not be needed
           subprocess.run("pip install --upgrade google-api-python-client")

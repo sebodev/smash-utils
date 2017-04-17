@@ -77,6 +77,7 @@ general.add_argument("--md5", nargs="?", default="", metavar="password", help=ar
 general.add_argument("--ssh", nargs="+", metavar=("website", "command"), help="ssh into a website or server")
 general.add_argument("--scp", nargs="*", metavar=["server", "remote", "local", "copy_directory"], help="Copies a file from a remote location to a local one. Optionally set copy_directory=True if this is directory being copied or pester me to make it auto-detect if it is a directory.")
 general.add_argument("--wp-cli", nargs="*", metavar=("website", "command"), help="runs a wp_cli command on the server")
+general.add_argument("--change-password", nargs="*", metavar=["website", "user", "new_password"], help="updates a user's password")
 general.add_argument("--redirect-table", nargs="*", metavar=["old-site", "dev-site", "out-file"], help="compares the links on the old site to the dev site to see which ones need to be redirected. Saves results to a csv file")
 
 maintenance.add_argument("--update", "--updates", nargs="*", metavar="website", help="Perform all available plugin updates")

@@ -17,6 +17,41 @@ elif "--temp" in sys.argv:
     from general_utils import wp_users
     print(wp_users.get_password_hash(*get_server_app("staging.ujido.com"), "sitekeeper"))
 
+elif "--change-password" in sys.argv:
+    from general_utils import wp_users
+
+    try:
+        site = args.change_password[0]
+    except:
+        site = None
+
+    try:
+        user = args.change_password[1]
+    except:
+        user = None
+
+    try:
+        password = args.change_password[2]
+    except:
+        password = None
+
+    while not site:
+        site = input("Enter a website: ")
+
+    while not user:
+        user = input("Enter a WordPress User: ")
+
+    if not password:
+        password = input(f"What would you like {user}'s new password to be. Leave blank for a random password: ")
+
+    if not password:
+        from lib import password_creator
+        password = password_creator.create(length=14)
+        print(f"\nThe new password will be {password}\n")
+
+    server, app = get_server_app(site)
+
+    wp_users.change_password(server, app, user, password)
 
 elif "--redirect-table" in sys.argv:
     from general_utils import redirects

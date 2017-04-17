@@ -134,11 +134,11 @@ def create(website, server=None, app_type=CURRENT_WORDPRESS_VERSION):
     if "wordpress" not in app_type:
         if not input("Would you like to create a database[Y/n]").startswith("n"):
             db_password = lib.password_creator.create(8)
-            print("created the following database")
             wf, wf_id = webfaction.connect(server)
             if smash_vars.verbose:
                 print("creating db for the app {} using the password {}".format(app_name, db_password))
-            print(wf.create_db(wf_id, app_name, "mysql", db_password))
+            resp = wf.create_db(wf_id, app_name, "mysql", db_password)
+            print(f"created the following database\nName: {resp['name']}\nUsername: {resp['db_user']}\nPassword: {db_password}\n")
         return
 
 
